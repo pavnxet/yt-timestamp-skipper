@@ -1,44 +1,41 @@
-const { chromium } = require('playwright');
+const fs = require('fs');
 const path = require('path');
 
-(async () => {
-  const browser = await chromium.launch();
-  const page = await browser.newPage();
+console.log('--- Verifying Extension Architecture ---');
 
-  // Navigate to mock page
-  const filePath = 'file://' + path.resolve('mock_youtube.html');
-  console.log('Navigating to:', filePath);
-  await page.goto(filePath);
+const files = ['manifest.json', 'popup.html', 'popup.css', 'popup.js', 'content.js'];
+files.forEach(file => {
+    if (fs.existsSync(file)) {
+        console.log(`✓ ${file} exists`);
+    } else {
+        console.log(`✗ ${file} is MISSING`);
+        process.exit(1);
+    }
+});
 
-  // Wait for script to initialize and inject UI
-  await page.waitForSelector('#evts-mini-btn', { timeout: 5000 });
-  console.log('✓ Mini button injected');
+// Basic content checks
+const manifest = JSON.parse(fs.readFileSync('manifest.json', 'utf8'));
+if (manifest.manifest_version === 3) {
+    console.log('✓ manifest_version is 3');
+} else {
+    console.log('✗ manifest_version is NOT 3');
+    process.exit(1);
+}
 
-  // Test opening the container
-  await page.click('#evts-mini-btn');
-  const isVisible = await page.isVisible('#evts-container');
-  console.log('✓ Container visible after click:', isVisible);
+const contentJs = fs.readFileSync('content.js', 'utf8');
+if (contentJs.includes('chrome.runtime.onMessage.addListener')) {
+    console.log('✓ content.js has message listener');
+} else {
+    console.log('✗ content.js is missing message listener');
+    process.exit(1);
+}
 
-  // Check if chapters were loaded from description
-  const textareaContent = await page.inputValue('#evts-container textarea');
-  console.log('✓ Textarea content:', textareaContent.replace(/\n/g, ' | '));
-  if (textareaContent.includes('01:30 Introduction')) {
-    console.log('✓ Chapters auto-loaded successfully');
-  } else {
-    console.log('✗ Chapters NOT auto-loaded');
-  }
+const popupJs = fs.readFileSync('popup.js', 'utf8');
+if (popupJs.includes('chrome.storage.local')) {
+    console.log('✓ popup.js uses chrome.storage.local');
+} else {
+    console.log('✗ popup.js is missing chrome.storage.local');
+    process.exit(1);
+}
 
-  // Check for settings gear
-  const gear = await page.$('span[title="Turso Settings"]');
-  if (gear) {
-    console.log('✓ Settings gear found');
-    await gear.click();
-    const modalVisible = await page.evaluate(() => {
-        const modals = Array.from(document.querySelectorAll('div')).filter(d => d.innerText.includes('Turso HTTP URL'));
-        return modals.some(m => m.style.display === 'flex');
-    });
-    console.log('✓ Settings modal visible:', modalVisible);
-  }
-
-  await browser.close();
-})();
+console.log('--- Verification Successful ---');

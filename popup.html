@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Smart Chapters</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div id="evts-container">
+        <div id="title-bar">
+            <span>Smart Chapters</span>
+            <span id="settings-btn" title="Turso Settings">Settings</span>
+        </div>
+        <div id="content">
+            <div id="settings-modal" style="display: none;">
+                <input id="turso-url" type="text" placeholder="Turso HTTP URL">
+                <input id="turso-token" type="password" placeholder="Turso Auth Token">
+                <button id="save-settings">Save Turso Config</button>
+            </div>
+            <div id="controls">
+                <button id="loop-btn">Loop Chapter: OFF</button>
+                <button id="share-btn">Share Link</button>
+            </div>
+            <div id="status">Loading...</div>
+            <textarea id="notes-textarea" placeholder="Timestamps (auto-loaded if available)"></textarea>
+            <div id="list-container"></div>
+            <div id="hint">[ Prev ] Next | "u" to capture current time</div>
+        </div>
+    </div>
+    <script src="popup.js"></script>
+</body>
+</html>

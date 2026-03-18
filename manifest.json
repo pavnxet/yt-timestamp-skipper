@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Easy Video Timestamp Skipper",
+  "version": "1.7.0",
+  "description": "Smart chapters, auto-load YouTube chapters, clickable list, and study notes with Turso DB sync.",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "tabs"
+  ],
+  "host_permissions": [
+    "*://www.youtube.com/*",
+    "*://*.vimeo.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Open Smart Chapters"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://www.youtube.com/*",
+        "*://*.vimeo.com/*"
+      ],
+      "js": ["content.js"]
+    }
+  ]
+}
