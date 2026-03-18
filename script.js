@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name Easy Video Timestamp Skipper - Smart + Auto Chapters v1.6
 // @namespace http://tampermonkey.net/
-// @version 1.6.1
+// @version 1.6.2
 // @description Starts minimized. Smart nearest [ ] jumps + auto-load YouTube chapters + clickable list
 // @author You
 // @match *://www.youtube.com/*
@@ -10,6 +10,9 @@
 // ==/UserScript==
 (function() {
     'use strict';
+
+    console.log('[EVTS] Script loaded');
+
     // === UI Setup (reliable glassy style) ===
     const savedPos = JSON.parse(localStorage.getItem('evts_pos') || '{}');
     const savedMiniPos = JSON.parse(localStorage.getItem('evts_mini_pos') || '{}');
@@ -18,15 +21,15 @@
     Object.assign(container.style, {
         position: 'fixed',
         top: savedPos.top || '20px',
-        left: savedPos.left || (savedPos.right ? 'auto' : ''),
-        right: savedPos.right || (savedPos.left ? 'auto' : '20px'),
+        left: (savedPos.left && savedPos.left !== 'auto') ? savedPos.left : '',
+        right: (savedPos.right && savedPos.right !== 'auto') ? savedPos.right : (savedPos.left && savedPos.left !== 'auto' ? 'auto' : '20px'),
         zIndex: '999999',
         width: '260px', background: 'rgba(255,255,255,0.22)',
         backdropFilter: 'blur(12px) saturate(160%)', WebkitBackdropFilter: 'blur(12px) saturate(160%)',
         border: '1px solid rgba(255,255,255,0.3)', borderRadius: '16px',
         boxShadow: '0 8px 32px rgba(0,0,0,0.25)', color: '#000',
         fontFamily: 'system-ui, sans-serif', overflow: 'hidden',
-        display: 'none' // CHANGED: Hide main box by default
+        display: 'none'
     });
     const titleBar = document.createElement('div');
     Object.assign(titleBar.style, {
@@ -35,9 +38,9 @@
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         userSelect: 'none'
     });
-    titleBar.innerHTML = '<span>Smart Chapters −</span>';
+    titleBar.innerHTML = '<span>Smart Chapters -</span>';
     const settingsBtn = document.createElement('span');
-    settingsBtn.innerHTML = '⚙️';
+    settingsBtn.innerHTML = 'Settings';
     settingsBtn.style.cursor = 'pointer';
     settingsBtn.style.fontSize = '16px';
     settingsBtn.title = 'Turso Settings';
@@ -138,27 +141,35 @@
     Object.assign(miniBtn.style, {
         position: 'fixed',
         top: savedMiniPos.top || '20px',
-        left: savedMiniPos.left || (savedMiniPos.right ? 'auto' : ''),
-        right: savedMiniPos.right || (savedMiniPos.left ? 'auto' : '20px'),
+        left: (savedMiniPos.left && savedMiniPos.left !== 'auto') ? savedMiniPos.left : '',
+        right: (savedMiniPos.right && savedMiniPos.right !== 'auto') ? savedMiniPos.right : (savedMiniPos.left && savedMiniPos.left !== 'auto' ? 'auto' : '20px'),
         width: '50px', height: '50px',
         background: 'rgba(255,255,255,0.28)', backdropFilter: 'blur(10px)',
         WebkitBackdropFilter: 'blur(10px)', borderRadius: '50%',
         border: '1px solid rgba(255,255,255,0.35)', boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
-        display: 'flex', // CHANGED: Show mini button by default
+        display: 'flex',
         alignItems: 'center', justifyContent: 'center',
         fontSize: '22px', cursor: 'pointer', zIndex: '999999',
         userSelect: 'none'
     });
-    miniBtn.textContent = '⏱'; miniBtn.title = 'Open Smart Chapters';
-    document.body.appendChild(container);
-    document.body.appendChild(miniBtn);
+    miniBtn.textContent = 'Open'; miniBtn.title = 'Open Smart Chapters';
+
+    function injectUI() {
+        if (!document.body || document.getElementById('evts-container')) return;
+        container.id = 'evts-container';
+        miniBtn.id = 'evts-mini-btn';
+        document.body.appendChild(container);
+        document.body.appendChild(miniBtn);
+        console.log('[EVTS] UI Injected');
+    }
+
     // === Minimize toggle ===
-    let minimized = true; // CHANGED: Set logic to true by default
+    let minimized = true;
     function toggleMinimize() {
         minimized = !minimized;
         container.style.display = minimized ? 'none' : 'block';
         miniBtn.style.display = minimized ? 'flex' : 'none';
-        titleBar.querySelector('span').textContent = minimized ? 'Chapters +' : 'Smart Chapters −';
+        titleBar.querySelector('span').textContent = minimized ? 'Chapters +' : 'Smart Chapters -';
     }
 
     titleBar.addEventListener('click', (e) => {
@@ -272,8 +283,8 @@
     };
 
     // === Core Logic ===
-    let timestamps = []; // sorted seconds
-    let titles = []; // optional chapter names
+    let timestamps = [];
+    let titles = [];
     function parseToSeconds(str) {
         if (!str) return 0;
         const parts = str.trim().split(':').map(Number);
@@ -342,30 +353,39 @@
             ? `Next: ${formatTime(timestamps[nextIdx])} (${Math.round(nextTime)}s)`
             : 'End of chapters';
     }
+
     function loadChapters() {
+        console.log('[EVTS] Attempting to load chapters');
         const desc = document.querySelector('#description-inline-expander, .yt-core-attributed-string');
-        if (!desc) return;
+        if (!desc) {
+            console.log('[EVTS] Description not found yet');
+            return;
+        }
         const text = desc.textContent || '';
         const lines = text.split('\n');
         const chapterRegex = /^(\d{1,2}(?::\d{2}){1,2})\s+(.+)$/i;
-        timestamps = [];
-        titles = [];
+        let newTimestamps = [];
+        let newTitles = [];
         lines.forEach(line => {
             const match = line.trim().match(chapterRegex);
             if (match) {
                 const sec = parseToSeconds(match[1]);
                 if (sec > 0) {
-                    timestamps.push(sec);
-                    titles.push(match[2].trim());
+                    newTimestamps.push(sec);
+                    newTitles.push(match[2].trim());
                 }
             }
         });
-        if (timestamps.length) {
+        if (newTimestamps.length) {
+            timestamps = newTimestamps;
+            titles = newTitles;
             timestamps = [...new Set(timestamps)].sort((a,b)=>a-b);
             textarea.value = timestamps.map((t,i) => `${formatTime(t)} ${titles[i] || ''}`).join('\n');
             status.textContent = `Loaded ${timestamps.length} chapters!`;
             updateList();
+            console.log('[EVTS] Chapters loaded:', timestamps.length);
         } else {
+            console.log('[EVTS] No chapters found in description');
             status.textContent = 'Paste/Capture timestamps below';
         }
     }
@@ -388,7 +408,6 @@
             }
         });
 
-        // Sort by time
         const combined = timestamps.map((t, i) => ({ t, title: titles[i] }));
         combined.sort((a, b) => a.t - b.t);
         timestamps = combined.map(c => c.t);
@@ -396,7 +415,6 @@
 
         updateList();
 
-        // Save to local storage for persistence on this video
         const videoId = new URLSearchParams(window.location.search).get('v');
         if (videoId) {
             localStorage.setItem('evts_local_' + videoId, textarea.value);
@@ -449,19 +467,31 @@
         }
     });
 
+    let lastVideoId = '';
     async function init() {
+        injectUI();
         const urlParams = new URLSearchParams(window.location.search);
         const evtsId = urlParams.get('evts_id');
         const videoId = urlParams.get('v');
 
-        if (evtsId) {
-            status.textContent = 'Loading shared notes...';
-            await loadFromTurso(evtsId);
-        } else if (videoId) {
-            const localSaved = localStorage.getItem('evts_local_' + videoId);
-            if (localSaved) {
-                textarea.value = localSaved;
-                updateFromTextarea();
+        if (videoId && videoId !== lastVideoId) {
+            console.log('[EVTS] New video detected:', videoId);
+            lastVideoId = videoId;
+            timestamps = [];
+            titles = [];
+            textarea.value = '';
+
+            if (evtsId) {
+                status.textContent = 'Loading shared notes...';
+                await loadFromTurso(evtsId);
+            } else {
+                const localSaved = localStorage.getItem('evts_local_' + videoId);
+                if (localSaved) {
+                    textarea.value = localSaved;
+                    updateFromTextarea();
+                } else {
+                    setTimeout(loadChapters, 1500);
+                }
             }
         }
 
@@ -470,14 +500,28 @@
         }
     }
 
+    // Handle YouTube SPA Navigation
+    window.addEventListener('yt-navigate-finish', () => {
+        console.log('[EVTS] yt-navigate-finish');
+        init();
+    });
+
     const observer = new MutationObserver(() => {
         if (document.querySelector('video')) {
-            loadChapters();
-            updateStatus();
+            injectUI();
             init();
-            observer.disconnect();
         }
     });
-    observer.observe(document.body, { childList: true, subtree: true });
+
+    function start() {
+        if (document.body) {
+            observer.observe(document.body, { childList: true, subtree: true });
+            init();
+        } else {
+            setTimeout(start, 50);
+        }
+    }
+    start();
+
     setInterval(updateStatus, 1000);
 })();
