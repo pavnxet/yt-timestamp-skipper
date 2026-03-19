@@ -2,7 +2,8 @@
   "manifest_version": 3,
   "name": "YT Smart Chapters Pro v2.0",
   "version": "2.0.0",
-  "description": "Smart jumps, mini-player widget, and custom shortcuts.",
+  "description": "Smart jumps, mini-player widget, and custom shortcuts. Made with 💖 by pavnxet.",
+  "homepage_url": "https://github.com/pavnxet/yt-timestamp-skipper",
   "permissions": [
     "storage",
     "clipboardWrite"

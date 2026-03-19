@@ -46,3 +46,8 @@ To use the cloud storage and sharing features:
 - **Matches:** `youtube.com/*`, `vimeo.com/*`
 - **Storage:** `localStorage` for UI state and local notes, Turso for cloud snapshots.
 - **Logic:** MutationObserver for dynamic page loading, interval-based status updates.
+
+---
+
+Made with 💖 by [pavnxet](https://github.com/pavnxet/yt-timestamp-skipper)
+

@@ -1,3 +1,8 @@
+/**
+ * YT Smart Chapters Pro v2.0
+ * made with 💖 by pavnxet
+ * GitHub: https://github.com/pavnxet/yt-timestamp-skipper
+ */
 let timestamps = [];
 let titles = [];
 let lastActiveIdx = -1;
@@ -11,6 +16,7 @@ function createMiniWidget() {
     if (miniWidget) return;
     miniWidget = document.createElement('div');
     miniWidget.id = 'yt-skipper-mini-widget';
+    miniWidget.title = 'Made with 💖 by pavnxet';
     miniWidget.innerHTML = `
         <div class="mini-widget-btn" id="mini-prev" title="Prev">◀</div>
         <div id="mini-current-title">No Chapters</div>
@@ -124,6 +130,9 @@ function createDashboard() {
             <input type="text" id="yt-sk-turso-url" class="yt-sk-turso-input" placeholder="Turso URL">
             <input type="password" id="yt-sk-turso-token" class="yt-sk-turso-input" placeholder="Auth Token">
             <button id="yt-sk-btn-save-settings">Verify & Save</button>
+        </div>
+        <div class="yt-sk-footer">
+            made with 💖 by <a href="https://github.com/pavnxet/yt-timestamp-skipper" target="_blank">pavnxet</a>
         </div>
     `;
     document.body.appendChild(dashboard);

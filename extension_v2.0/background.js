@@ -1,3 +1,8 @@
+/**
+ * YT Smart Chapters Pro v2.0
+ * made with 💖 by pavnxet
+ * GitHub: https://github.com/pavnxet/yt-timestamp-skipper
+ */
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'tursoQuery') {
         const { url, token, sql, args } = request.payload;
