@@ -1,0 +1,201 @@
+/* Dynamic Glassmorphism for the floating widget */
+#yt-skipper-mini-widget {
+    position: fixed;
+    bottom: 60px;
+    right: 20px;
+    z-index: 999999;
+    padding: 8px 12px;
+    background: rgba(15, 15, 15, 0.5);
+    backdrop-filter: blur(15px) saturate(180%);
+    -webkit-backdrop-filter: blur(15px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+    color: #fff;
+    font-family: 'Inter', system-ui, sans-serif;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    user-select: none;
+    cursor: move;
+}
+
+#yt-skipper-mini-widget:hover {
+    background: rgba(15, 15, 15, 0.7);
+    border-color: rgba(0, 242, 254, 0.3);
+}
+
+.mini-widget-btn {
+    cursor: pointer;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+}
+
+.mini-widget-btn:hover {
+    background: rgba(0, 242, 254, 0.2);
+    border-color: #00f2fe;
+}
+
+#mini-current-title {
+    font-size: 12px;
+    font-weight: 500;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #00f2fe;
+}
+
+.yt-ts-custom-marker {
+    position: absolute;
+    bottom: 0;
+    width: 3px;
+    height: 100%;
+    background-color: #00f2fe;
+    z-index: 99;
+    box-shadow: 0 0 6px rgba(0, 242, 254, 0.6);
+    pointer-events: none;
+}
+
+/* ========================================================
+   APPLE-STYLE BACKGROUND DASHBOARD (INJECTED UI)
+   ======================================================== */
+#yt-skipper-dashboard {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 330px;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+    z-index: 9999999;
+    padding: 20px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    
+    /* True Apple Glassmorphism */
+    background: rgba(30, 30, 30, 0.55);
+    backdrop-filter: blur(25px) saturate(180%);
+    -webkit-backdrop-filter: blur(25px) saturate(180%);
+    border: 0.5px solid rgba(255, 255, 255, 0.15);
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+    
+    color: #f0f0f0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
+    transform: translateX(400px); /* hidden off-screen */
+    opacity: 0;
+    pointer-events: none;
+}
+
+#yt-skipper-dashboard.yt-sk-visible {
+    transform: translateX(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Base styles inside dashboard to prevent YT overrides */
+#yt-skipper-dashboard * {
+    box-sizing: border-box;
+    font-family: inherit;
+}
+
+.yt-sk-header { display: flex; justify-content: space-between; align-items: center; }
+.yt-sk-header h2 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: 0.5px; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+.yt-sk-status { font-size: 11px; color: #00f2fe; font-weight: 500; text-transform: uppercase; }
+
+.yt-sk-textarea-container { position: relative; width: 100%; height: 90px; }
+.yt-sk-textarea-layer {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    font-family: 'Fira Code', monospace; font-size: 12px;
+    padding: 12px; border-radius: 12px; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; 
+    overflow-y: auto; overflow-x: hidden;
+}
+
+/* Hide scrollbar internally */
+.yt-sk-textarea-layer::-webkit-scrollbar { width: 4px; }
+.yt-sk-textarea-layer::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+
+#yt-sk-textarea {
+    color: transparent; background: transparent; caret-color: #fff; resize: none; z-index: 2;
+    border: 0.5px solid rgba(255, 255, 255, 0.1); transition: border 0.3s, background 0.3s;
+}
+#yt-sk-textarea:focus { outline: none; border-color: rgba(255, 255, 255, 0.3); background: rgba(255, 255, 255, 0.03); }
+#yt-sk-textarea-highlights {
+    background: rgba(0, 0, 0, 0.3); color: #fff; z-index: 1; border: 0.5px solid transparent;
+}
+.yt-sk-ts-highlight { color: #00f2fe; font-weight: bold; text-shadow: 0 0 6px rgba(0, 242, 254, 0.6); }
+
+.yt-sk-btn-group { display: flex; gap: 8px; }
+.yt-sk-btn-group button { 
+    flex: 1; padding: 10px; cursor: pointer; border: 0.5px solid rgba(255, 255, 255, 0.15); 
+    border-radius: 10px; background: rgba(255, 255, 255, 0.05); color: #fff; display: flex;
+    font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+    align-items: center; justify-content: center; gap: 4px; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.yt-sk-btn-group button:hover { background: rgba(255, 255, 255, 0.15); border-color: rgba(255,255,255,0.4); transform: scale(1.02); }
+
+#yt-sk-mode { 
+    width: 100%; padding: 10px 12px; border-radius: 10px; border: 0.5px solid rgba(255, 255, 255, 0.1); 
+    font-size: 12px; background: rgba(0, 0, 0, 0.3); color: #fff; cursor: pointer; outline: none;
+    -webkit-appearance: none;
+}
+#yt-sk-mode option { background: #1a1a1a; }
+
+.yt-sk-list { 
+    max-height: 200px; overflow-y: auto; border-radius: 12px; 
+    background: rgba(0,0,0,0.2); border: 0.5px solid rgba(255,255,255,0.05);
+}
+.yt-sk-list::-webkit-scrollbar { width: 4px; }
+.yt-sk-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+
+.yt-sk-item { 
+    padding: 12px 14px; border-bottom: 0.5px solid rgba(255,255,255,0.05); 
+    display: flex; justify-content: space-between; cursor: pointer; 
+    font-size: 12px; transition: all 0.2s;
+}
+.yt-sk-item:hover { background: rgba(255,255,255,0.08); padding-left: 18px; }
+.yt-sk-item.yt-sk-active { 
+    background: rgba(0, 242, 254, 0.1); color: #00f2fe; 
+    border-left: 3px solid #00f2fe; padding-left: 18px; font-weight: 600;
+}
+
+.yt-sk-section-title { font-size: 11px; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 1px; margin-top: 8px; }
+
+.yt-sk-shortcut-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
+.yt-sk-shortcut-item { display: flex; flex-direction: column; gap: 4px; }
+.yt-sk-shortcut-item label { font-size: 10px; color: rgba(255,255,255,0.5); }
+.yt-sk-shortcut-input { 
+    background: rgba(0,0,0,0.3); border: 0.5px solid rgba(255,255,255,0.1); 
+    color: #00f2fe; padding: 8px; font-size: 11px; border-radius: 8px; 
+    text-align: center; cursor: pointer; font-weight: bold; transition: 0.2s;
+}
+.yt-sk-shortcut-input:hover { background: rgba(255,255,255,0.1); }
+
+.yt-sk-settings-btn { 
+    text-align: center; cursor: pointer; font-size: 11px; color: rgba(255,255,255,0.6); 
+    margin-top: 5px; text-decoration: underline; transition: color 0.2s;
+}
+.yt-sk-settings-btn:hover { color: #fff; }
+
+#yt-sk-settings-panel { display: none; margin-top: 10px; border-top: 0.5px solid rgba(255,255,255,0.1); padding-top: 15px; }
+#yt-sk-settings-panel.yt-sk-active { display: block; }
+
+.yt-sk-turso-input { width: 100%; box-sizing: border-box; margin-bottom: 8px; padding: 10px; font-size: 11px; background: rgba(0,0,0,0.3); border: 0.5px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff; }
+.yt-sk-turso-input:focus { outline: none; border-color: rgba(255,255,255,0.4); }
+
+#yt-sk-btn-save-settings {
+    width: 100%; padding: 10px; cursor: pointer; border: 0.5px solid rgba(255, 255, 255, 0.15); 
+    border-radius: 8px; background: rgba(255, 255, 255, 0.05); color: #fff; 
+    font-size: 11px; font-weight: 600; transition: 0.2s;
+}
+#yt-sk-btn-save-settings:hover { background: rgba(255,255,255,0.2); }
