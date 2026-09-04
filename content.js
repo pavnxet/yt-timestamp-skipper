@@ -1157,6 +1157,18 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.action === 'toggleDashboard') {
         toggleDashboard();
         sendResponse({success: true});
+    } else if (msg.action === 'chunkProgress') {
+        // Real-time progressive UI update as each hour is analyzed
+        if (msg.partialText) {
+            updateStateFromText(msg.partialText);
+            const textarea = document.getElementById('yt-sk-textarea');
+            if (textarea && document.activeElement !== textarea) {
+                textarea.value = msg.partialText;
+                if (typeof applyHighlights === 'function') applyHighlights(msg.partialText);
+            }
+            showToast(`Analyzed Hour ${msg.currentHour}/${msg.totalHours} (${timestamps.length} chapters loaded)...`, '⏳', 4000);
+        }
+        sendResponse({success: true});
     }
 });
 

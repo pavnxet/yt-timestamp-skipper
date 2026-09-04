@@ -45,7 +45,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 
     if (request.action === 'generateChapters') {
-        generateChapters(request.text)
+        const tabId = sender?.tab?.id;
+        generateChapters(request.text, tabId)
             .then(res => sendResponse({ success: true, data: res }))
             .catch(err => sendResponse({ success: false, error: err.message }));
         return true;
@@ -132,7 +133,7 @@ async function verifyAiConnection(payload) {
     }
 }
 
-async function generateChapters(text) {
+async function generateChapters(text, tabId = null) {
     console.log("Generating chapters for text length:", text.length);
     
     const config = await new Promise(resolve => chrome.storage.local.get([
@@ -209,6 +210,27 @@ async function generateChapters(text) {
                         tableRows.push(trimmed);
                     }
                 });
+            }
+
+            // Immediately send current accumulated rows to UI so user sees live progress!
+            if (tabId && tableRows.length > 0) {
+                const header = "| Q# | Question Start | Correct Option Timestamp | Answer Start | Correct Option |\n| -- | -------------- | ------------------------ | ------------ | -------------- |";
+                let tempCounter = 1;
+                const progressiveRows = tableRows.map(row => {
+                    const parts = row.split('|');
+                    if (parts.length >= 6) {
+                        parts[1] = ` Q${tempCounter++} `;
+                        return parts.join('|');
+                    }
+                    return row;
+                });
+                const progressiveText = `${header}\n${progressiveRows.join('\n')}`;
+                chrome.tabs.sendMessage(tabId, {
+                    action: 'chunkProgress',
+                    currentHour: i + 1,
+                    totalHours: validChunks.length,
+                    partialText: progressiveText
+                }).catch(() => {});
             }
 
             // Cooldown delay between consecutive chunks to prevent Qwen / Cloudflare CAPTCHA rate limiting
