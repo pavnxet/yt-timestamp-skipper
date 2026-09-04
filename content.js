@@ -116,7 +116,7 @@ function createDashboard() {
     dashboard = document.createElement('div');
     dashboard.id = 'yt-skipper-dashboard';
     dashboard.innerHTML = `
-        <div class="yt-sk-header" id="yt-sk-header">
+        <div class="yt-sk-header" id="yt-sk-header" title="Double click to Minimize / Expand">
             <div class="yt-sk-header-left">
                 <h2>Skipper v3.0</h2>
                 <div class="yt-sk-status" id="yt-sk-status">Active</div>
@@ -302,6 +302,12 @@ function createDashboard() {
     // Close & Minimize
     btnClose.onclick = () => dashboard.classList.remove('yt-sk-visible');
     btnMin.onclick = () => dashboard.classList.toggle('yt-sk-minimized');
+
+    // Double-click header to Minimize / Maximize
+    header.ondblclick = (e) => {
+        if (e.target.closest('.yt-sk-header-actions')) return;
+        dashboard.classList.toggle('yt-sk-minimized');
+    };
 
     // Tab Switching
     dashboard.querySelectorAll('.yt-sk-tab-btn').forEach(btn => {
