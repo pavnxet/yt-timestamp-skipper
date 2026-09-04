@@ -274,6 +274,34 @@ function createDashboard() {
                 </label>
             </div>
 
+            <!-- COMPLETION SOUND EFFECT -->
+            <div class="yt-sk-section-title" style="margin-top:6px;">Completion Sound Effect</div>
+            <div class="yt-sk-toggle-row">
+                <div class="yt-sk-toggle-text">
+                    <div class="yt-sk-toggle-title">Play Sound on AI Done</div>
+                    <div class="yt-sk-toggle-desc">Play audio alert when chapters finish generating</div>
+                </div>
+                <label class="yt-sk-switch">
+                    <input type="checkbox" id="yt-sk-sound-enabled">
+                    <span class="yt-sk-slider"></span>
+                </label>
+            </div>
+
+            <div style="display: flex; gap: 6px; align-items: center; margin-bottom: 6px;">
+                <input type="text" id="yt-sk-sound-url" class="yt-sk-turso-input" style="margin-bottom:0;" placeholder="Default: Anime Wow (or paste MP3 URL / select file)">
+                <button class="yt-sk-btn" id="yt-sk-btn-browse-sound" style="padding: 7px 10px; font-size:10px; white-space:nowrap;" title="Upload custom audio file">📁 File</button>
+                <input type="file" id="yt-sk-sound-file-input" accept="audio/*" style="display:none;">
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; background: var(--yt-sk-btn-bg); padding: 7px 10px; border-radius: 8px; border: 1px solid var(--yt-sk-btn-border);">
+                <div style="display:flex; align-items:center; gap: 8px; flex: 1;">
+                    <span style="font-size:11px; font-weight:600; color:var(--yt-sk-text);">🔊 Volume</span>
+                    <input type="range" id="yt-sk-sound-volume" min="0" max="100" value="80" style="flex:1; cursor:pointer; accent-color: var(--yt-sk-accent);">
+                    <span id="yt-sk-volume-val" style="font-size:10px; font-weight:700; color:var(--yt-sk-accent); min-width:28px;">80%</span>
+                </div>
+                <button class="yt-sk-btn" id="yt-sk-btn-test-sound" style="margin-left: 10px; padding: 4px 10px; font-size: 10px; font-weight: 700; border-color: var(--yt-sk-accent);" title="Play test sound">▶ Test</button>
+            </div>
+
             <button id="yt-sk-btn-save-settings">Save All Settings</button>
         </div>
 
@@ -403,16 +431,67 @@ function createDashboard() {
             document.getElementById('yt-sk-auto-comment').checked = true; // default enabled
         }
 
-        showMiniWidget = !!res.showMiniWidget; // Default false (no second popup)
-        const miniToggle = document.getElementById('yt-sk-show-mini-widget');
-        if (miniToggle) {
-            miniToggle.checked = showMiniWidget;
-            miniToggle.onchange = () => {
-                showMiniWidget = miniToggle.checked;
-                chrome.storage.local.set({ showMiniWidget });
-                updateMiniWidget();
+        // Completion Sound Effect Settings
+        const soundEnabledToggle = document.getElementById('yt-sk-sound-enabled');
+        const soundUrlInput = document.getElementById('yt-sk-sound-url');
+        const soundVolSlider = document.getElementById('yt-sk-sound-volume');
+        const soundVolVal = document.getElementById('yt-sk-volume-val');
+        const btnBrowseSound = document.getElementById('yt-sk-btn-browse-sound');
+        const soundFileInput = document.getElementById('yt-sk-sound-file-input');
+        const btnTestSound = document.getElementById('yt-sk-btn-test-sound');
+
+        if (soundEnabledToggle) {
+            soundEnabledToggle.checked = typeof res.soundEnabled === 'undefined' ? true : !!res.soundEnabled;
+            soundEnabledToggle.onchange = () => {
+                chrome.storage.local.set({ soundEnabled: soundEnabledToggle.checked });
             };
         }
+
+        if (soundUrlInput) {
+            soundUrlInput.value = res.soundUrl || '';
+        }
+
+        if (soundVolSlider) {
+            const vol = typeof res.soundVolume !== 'undefined' ? res.soundVolume : 80;
+            soundVolSlider.value = vol;
+            if (soundVolVal) soundVolVal.textContent = vol + '%';
+            soundVolSlider.oninput = () => {
+                if (soundVolVal) soundVolVal.textContent = soundVolSlider.value + '%';
+            };
+            soundVolSlider.onchange = () => {
+                chrome.storage.local.set({ soundVolume: Number(soundVolSlider.value) });
+            };
+        }
+
+        if (btnBrowseSound && soundFileInput) {
+            btnBrowseSound.onclick = () => soundFileInput.click();
+            soundFileInput.onchange = () => {
+                const file = soundFileInput.files?.[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const dataUrl = e.target.result;
+                        chrome.storage.local.set({ 
+                            soundCustomData: dataUrl,
+                            soundUrl: file.name
+                        }, () => {
+                            if (soundUrlInput) soundUrlInput.value = file.name;
+                            setStatus('SOUND LOADED', '#00e676');
+                            playCompletionSound();
+                        });
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+        }
+
+        if (btnTestSound) {
+            btnTestSound.onclick = () => {
+                playCompletionSound();
+                setStatus('PLAYING SOUND', '#00f2fe');
+            };
+        }
+
         updateMiniWidget();
         
         // AI Provider selection
@@ -586,6 +665,9 @@ function createDashboard() {
         const autoGenerate = document.getElementById('yt-sk-auto-generate')?.checked || false;
         const autoSaveSync = document.getElementById('yt-sk-auto-save-sync')?.checked || false;
         const miniChecked = document.getElementById('yt-sk-show-mini-widget')?.checked || false;
+        const soundEnabled = document.getElementById('yt-sk-sound-enabled')?.checked ?? true;
+        const soundUrl = document.getElementById('yt-sk-sound-url')?.value.trim() || '';
+        const soundVolume = Number(document.getElementById('yt-sk-sound-volume')?.value || 80);
 
         setStatus('SAVING...');
         const toSave = { 
@@ -593,7 +675,10 @@ function createDashboard() {
             autoComment: autoComment,
             autoGenerate: autoGenerate,
             autoSaveSync: autoSaveSync,
-            showMiniWidget: miniChecked
+            showMiniWidget: miniChecked,
+            soundEnabled: soundEnabled,
+            soundUrl: soundUrl,
+            soundVolume: soundVolume
         };
         showMiniWidget = miniChecked;
         updateMiniWidget();
@@ -714,6 +799,7 @@ function createDashboard() {
                     textarea.value = r.data.trim();
                     textarea.oninput();
                     setStatus('AI COMPLETE', '#00e676');
+                    playCompletionSound();
                 } else {
                     const err = r?.error || 'AI Failed';
                     setStatus(err.length > 20 ? 'AI ERROR' : err.toUpperCase(), '#ff4b4b');
@@ -1099,6 +1185,37 @@ function showToast(msg, icon = '⚡', duration = 4500) {
     }, duration);
 }
 
+// --- Audio Alert on AI Completion ---
+function playCompletionSound() {
+    chrome.storage.local.get(['soundEnabled', 'soundUrl', 'soundVolume', 'soundCustomData'], res => {
+        // Enabled by default unless explicitly set to false
+        const enabled = typeof res.soundEnabled === 'undefined' ? true : !!res.soundEnabled;
+        if (!enabled) return;
+
+        let src = res.soundCustomData || res.soundUrl;
+        if (!src || !src.trim()) {
+            src = chrome.runtime.getURL('anime-wow.mp3');
+        }
+
+        const vol = typeof res.soundVolume !== 'undefined' ? Number(res.soundVolume) / 100 : 0.8;
+        try {
+            const audio = new Audio(src);
+            audio.volume = Math.max(0, Math.min(1, vol));
+            audio.play().catch(e => {
+                console.warn("Audio playback blocked or failed:", e);
+                // Fallback attempt with bundled file if custom URL had CORS/network error
+                if (src !== chrome.runtime.getURL('anime-wow.mp3')) {
+                    const fallback = new Audio(chrome.runtime.getURL('anime-wow.mp3'));
+                    fallback.volume = Math.max(0, Math.min(1, vol));
+                    fallback.play().catch(() => {});
+                }
+            });
+        } catch (err) {
+            console.error("Audio error:", err);
+        }
+    });
+}
+
 // --- Auto Timestamp Generation on Video Load ---
 let isAutoGenerating = false;
 let lastProcessedVideoId = null;
@@ -1143,6 +1260,7 @@ async function checkAndTriggerAutoGeneration() {
                     updateStateFromText(generatedText);
                     const count = timestamps.length;
                     showToast(`✨ Timestamps Generated! (${count} chapters ready)`, '✅', 5000);
+                    playCompletionSound(); // Play audio alert!
                     
                     const textarea = document.getElementById('yt-sk-textarea');
                     if (textarea) {
