@@ -1,0 +1,665 @@
+/* 
+ * YT Smart Chapters Pro v3.0
+ * made with 💖 by pavnxet
+ * GitHub: https://github.com/pavnxet/yt-timestamp-skipper
+ */
+/* Dynamic Glassmorphism for the floating widget */
+#yt-skipper-mini-widget {
+    position: fixed;
+    bottom: 60px;
+    right: 20px;
+    z-index: 999999;
+    padding: 8px 12px;
+    background: rgba(15, 15, 15, 0.5);
+    backdrop-filter: blur(15px) saturate(180%);
+    -webkit-backdrop-filter: blur(15px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+    color: #fff;
+    font-family: 'Inter', system-ui, sans-serif;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    user-select: none;
+    cursor: move;
+}
+
+#yt-skipper-mini-widget:hover {
+    background: rgba(15, 15, 15, 0.7);
+    border-color: rgba(0, 242, 254, 0.3);
+}
+
+.mini-widget-btn {
+    cursor: pointer;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+}
+
+.mini-widget-btn:hover {
+    background: rgba(0, 242, 254, 0.2);
+    border-color: #00f2fe;
+}
+
+#mini-current-title { 
+    font-size: 12px;
+    font-weight: 500;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #00f2fe;
+}
+
+.yt-ts-custom-marker {
+    position: absolute;
+    bottom: 0;
+    width: 3px;
+    height: 100%;
+    background-color: #00f2fe;
+    z-index: 99;
+    box-shadow: 0 0 6px rgba(0, 242, 254, 0.6);
+    pointer-events: none;
+}
+
+/* ========================================================
+   MODERN TABBED DASHBOARD (INJECTED UI) - BLUR MORPHISM
+   ======================================================== */
+:root,
+#yt-skipper-dashboard,
+#yt-skipper-dashboard.yt-sk-dark-theme {
+    --yt-sk-bg: rgba(18, 21, 26, 0.78);
+    --yt-sk-border: rgba(255, 255, 255, 0.14);
+    --yt-sk-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.06);
+    --yt-sk-text: #f3f4f6;
+    --yt-sk-text-muted: rgba(255, 255, 255, 0.65);
+    --yt-sk-header-bg: rgba(255, 255, 255, 0.04);
+    --yt-sk-tab-bar-bg: rgba(0, 0, 0, 0.3);
+    --yt-sk-tab-active-bg: rgba(255, 255, 255, 0.14);
+    --yt-sk-card-bg: rgba(0, 0, 0, 0.32);
+    --yt-sk-card-border: rgba(255, 255, 255, 0.09);
+    --yt-sk-btn-bg: rgba(255, 255, 255, 0.07);
+    --yt-sk-btn-border: rgba(255, 255, 255, 0.12);
+    --yt-sk-btn-hover: rgba(255, 255, 255, 0.15);
+    --yt-sk-accent: #00f2fe;
+    --yt-sk-accent-bg: rgba(0, 242, 254, 0.12);
+    --yt-sk-accent-border: rgba(0, 242, 254, 0.3);
+    --yt-sk-item-hover: rgba(255, 255, 255, 0.07);
+    --yt-sk-input-bg: rgba(0, 0, 0, 0.38);
+    --yt-sk-input-border: rgba(255, 255, 255, 0.12);
+    --yt-sk-input-text: #ffffff;
+    --yt-sk-caret: #00f2fe;
+    --yt-sk-footer-bg: rgba(0, 0, 0, 0.25);
+    --yt-sk-blur: 28px;
+    --yt-sk-saturate: 200%;
+}
+
+/* HIGH-CONTRAST LIGHT THEME GLASSMORPHISM (Never blends into YouTube white background) */
+#yt-skipper-dashboard.yt-sk-light-theme {
+    --yt-sk-bg: rgba(248, 250, 253, 0.88);
+    --yt-sk-border: rgba(0, 0, 0, 0.16);
+    --yt-sk-shadow: 0 24px 60px rgba(0, 0, 0, 0.18), 0 4px 16px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.08);
+    --yt-sk-text: #1a202c;
+    --yt-sk-text-muted: #4a5568;
+    --yt-sk-header-bg: rgba(0, 0, 0, 0.03);
+    --yt-sk-tab-bar-bg: rgba(0, 0, 0, 0.06);
+    --yt-sk-tab-active-bg: #ffffff;
+    --yt-sk-card-bg: rgba(255, 255, 255, 0.75);
+    --yt-sk-card-border: rgba(0, 0, 0, 0.12);
+    --yt-sk-btn-bg: rgba(255, 255, 255, 0.85);
+    --yt-sk-btn-border: rgba(0, 0, 0, 0.15);
+    --yt-sk-btn-hover: #ffffff;
+    --yt-sk-accent: #0284c7;
+    --yt-sk-accent-bg: rgba(2, 132, 199, 0.12);
+    --yt-sk-accent-border: rgba(2, 132, 199, 0.35);
+    --yt-sk-item-hover: rgba(2, 132, 199, 0.08);
+    --yt-sk-input-bg: rgba(255, 255, 255, 0.9);
+    --yt-sk-input-border: rgba(0, 0, 0, 0.18);
+    --yt-sk-input-text: #1a202c;
+    --yt-sk-caret: #0284c7;
+    --yt-sk-footer-bg: rgba(0, 0, 0, 0.04);
+    --yt-sk-blur: 32px;
+    --yt-sk-saturate: 190%;
+}
+
+#yt-skipper-dashboard {
+    position: fixed;
+    top: 70px;
+    right: 24px;
+    width: 385px;
+    max-height: calc(100vh - 90px);
+    z-index: 9999999;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    
+    background: var(--yt-sk-bg);
+    backdrop-filter: blur(var(--yt-sk-blur)) saturate(var(--yt-sk-saturate));
+    -webkit-backdrop-filter: blur(var(--yt-sk-blur)) saturate(var(--yt-sk-saturate));
+    border: 1px solid var(--yt-sk-border);
+    border-radius: 18px;
+    box-shadow: var(--yt-sk-shadow);
+    
+    color: var(--yt-sk-text);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease, background 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    transform: translateX(430px);
+    opacity: 0;
+    pointer-events: none;
+}
+
+#yt-skipper-dashboard.yt-sk-visible {
+    transform: translateX(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+#yt-skipper-dashboard.yt-sk-minimized {
+    width: 270px;
+}
+
+#yt-skipper-dashboard.yt-sk-minimized .yt-sk-tabs,
+#yt-skipper-dashboard.yt-sk-minimized .yt-sk-tab-content,
+#yt-skipper-dashboard.yt-sk-minimized .yt-sk-footer {
+    display: none !important;
+}
+
+#yt-skipper-dashboard * {
+    box-sizing: border-box;
+    font-family: inherit;
+}
+
+/* Header */
+.yt-sk-header { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    padding: 13px 18px;
+    background: var(--yt-sk-header-bg);
+    border-bottom: 1px solid var(--yt-sk-border);
+    cursor: grab;
+    user-select: none;
+}
+
+.yt-sk-header:active {
+    cursor: grabbing;
+}
+
+.yt-sk-header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.yt-sk-header h2 { 
+    margin: 0; 
+    font-size: 14px; 
+    font-weight: 700; 
+    letter-spacing: 0.3px; 
+    color: var(--yt-sk-text); 
+}
+
+.yt-sk-status { 
+    font-size: 10px; 
+    color: var(--yt-sk-accent); 
+    background: var(--yt-sk-accent-bg);
+    border: 1px solid var(--yt-sk-accent-border);
+    border-radius: 12px;
+    padding: 2px 7px;
+    font-weight: 600; 
+    text-transform: uppercase; 
+    letter-spacing: 0.5px;
+    transition: all 0.2s ease;
+}
+
+.yt-sk-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.yt-sk-icon-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--yt-sk-btn-bg);
+    border: 1px solid var(--yt-sk-btn-border);
+    color: var(--yt-sk-text-muted);
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s;
+}
+
+.yt-sk-icon-btn:hover {
+    background: var(--yt-sk-btn-hover);
+    color: var(--yt-sk-text);
+}
+
+.yt-sk-icon-btn.yt-sk-close-btn:hover {
+    background: rgba(255, 75, 75, 0.25);
+    border-color: #ff4b4b;
+    color: #ff4b4b;
+}
+
+/* Tabs Bar */
+.yt-sk-tabs {
+    display: flex;
+    background: var(--yt-sk-tab-bar-bg);
+    margin: 12px 16px 2px 16px;
+    padding: 3px;
+    border-radius: 10px;
+    border: 1px solid var(--yt-sk-card-border);
+    gap: 3px;
+}
+
+.yt-sk-tab-btn {
+    flex: 1;
+    padding: 7px 10px;
+    border-radius: 7px;
+    border: none;
+    background: transparent;
+    color: var(--yt-sk-text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+
+.yt-sk-tab-btn:hover {
+    color: var(--yt-sk-text);
+    background: var(--yt-sk-btn-bg);
+}
+
+.yt-sk-tab-btn.active {
+    background: var(--yt-sk-tab-active-bg);
+    color: var(--yt-sk-accent);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Tab Panels */
+.yt-sk-tab-content {
+    padding: 12px 16px;
+    overflow-y: auto;
+    max-height: calc(100vh - 230px);
+    display: none;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.yt-sk-tab-content.active {
+    display: flex;
+}
+
+/* Custom Scrollbars */
+.yt-sk-tab-content::-webkit-scrollbar,
+.yt-sk-list::-webkit-scrollbar,
+#yt-sk-textarea-highlights::-webkit-scrollbar,
+#yt-sk-textarea::-webkit-scrollbar {
+    width: 5px;
+}
+
+.yt-sk-tab-content::-webkit-scrollbar-track,
+.yt-sk-list::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+.yt-sk-tab-content::-webkit-scrollbar-thumb,
+.yt-sk-list::-webkit-scrollbar-thumb,
+#yt-sk-textarea::-webkit-scrollbar-thumb {
+    background: var(--yt-sk-btn-border);
+    border-radius: 4px;
+}
+
+.yt-sk-tab-content::-webkit-scrollbar-thumb:hover,
+.yt-sk-list::-webkit-scrollbar-thumb:hover {
+    background: var(--yt-sk-accent);
+}
+
+/* Chapters Tab */
+#yt-sk-mode { 
+    width: 100%; 
+    padding: 8px 12px; 
+    border-radius: 8px; 
+    border: 1px solid var(--yt-sk-input-border); 
+    font-size: 11px; 
+    background: var(--yt-sk-input-bg); 
+    color: var(--yt-sk-input-text); 
+    cursor: pointer; 
+    outline: none;
+    transition: border 0.2s;
+}
+#yt-sk-mode option { 
+    background: var(--yt-sk-bg); 
+    color: var(--yt-sk-text); 
+}
+
+.yt-sk-list { 
+    max-height: 240px; 
+    overflow-y: auto; 
+    border-radius: 10px; 
+    background: var(--yt-sk-card-bg); 
+    border: 1px solid var(--yt-sk-card-border);
+}
+
+.yt-sk-item { 
+    padding: 9px 12px; 
+    border-bottom: 1px solid var(--yt-sk-card-border); 
+    display: flex; 
+    align-items: center;
+    justify-content: space-between; 
+    cursor: pointer; 
+    font-size: 12px; 
+    color: var(--yt-sk-text);
+    gap: 10px;
+    transition: all 0.15s;
+}
+
+.yt-sk-item:last-child {
+    border-bottom: none;
+}
+
+.yt-sk-item:hover { 
+    background: var(--yt-sk-item-hover); 
+    padding-left: 15px; 
+}
+
+.yt-sk-item.yt-sk-active { 
+    background: var(--yt-sk-accent-bg); 
+    color: var(--yt-sk-accent); 
+    border-left: 3px solid var(--yt-sk-accent); 
+    padding-left: 15px; 
+    font-weight: 600;
+}
+
+.yt-sk-item-time {
+    font-family: 'Fira Code', monospace;
+    font-size: 11px;
+    background: var(--yt-sk-accent-bg);
+    border: 1px solid var(--yt-sk-accent-border);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--yt-sk-accent);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.yt-sk-item-title {
+    opacity: 0.9;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: right;
+    color: var(--yt-sk-text);
+}
+
+.yt-sk-btn-row { 
+    display: flex; 
+    gap: 8px; 
+}
+
+.yt-sk-btn { 
+    flex: 1; 
+    padding: 8px 12px; 
+    cursor: pointer; 
+    border: 1px solid var(--yt-sk-btn-border); 
+    border-radius: 8px; 
+    background: var(--yt-sk-btn-bg); 
+    color: var(--yt-sk-text); 
+    display: flex; 
+    font-size: 11px; 
+    font-weight: 600; 
+    letter-spacing: 0.4px;
+    align-items: center; 
+    justify-content: center; 
+    gap: 6px; 
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.yt-sk-btn:hover { 
+    background: var(--yt-sk-btn-hover); 
+    border-color: var(--yt-sk-accent-border); 
+    color: var(--yt-sk-accent);
+    transform: translateY(-1px); 
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+}
+
+.yt-sk-btn:active { 
+    transform: translateY(0); 
+}
+
+.yt-sk-btn-primary {
+    background: var(--yt-sk-accent-bg);
+    border-color: var(--yt-sk-accent-border);
+    color: var(--yt-sk-accent);
+}
+
+.yt-sk-btn-primary:hover {
+    background: var(--yt-sk-accent);
+    color: #ffffff !important;
+    border-color: var(--yt-sk-accent);
+}
+
+/* Editor Tab */
+.yt-sk-textarea-container { 
+    position: relative; 
+    width: 100%; 
+    height: 170px; 
+}
+
+.yt-sk-textarea-layer {
+    position: absolute; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%;
+    font-family: 'Fira Code', monospace; 
+    font-size: 12px;
+    padding: 12px; 
+    border-radius: 10px; 
+    line-height: 1.5; 
+    white-space: pre-wrap; 
+    word-wrap: break-word; 
+    overflow-y: auto; 
+    overflow-x: hidden;
+}
+
+#yt-sk-textarea {
+    color: transparent; 
+    background: transparent; 
+    caret-color: var(--yt-sk-caret); 
+    resize: none; 
+    z-index: 2;
+    border: 1px solid var(--yt-sk-card-border); 
+    transition: border 0.2s, background 0.2s;
+}
+
+#yt-sk-textarea:focus { 
+    outline: none; 
+    border-color: var(--yt-sk-accent); 
+    background: rgba(255, 255, 255, 0.03); 
+}
+
+#yt-sk-textarea-highlights {
+    background: var(--yt-sk-card-bg); 
+    color: var(--yt-sk-text); 
+    z-index: 1; 
+    border: 1px solid var(--yt-sk-card-border);
+}
+
+.yt-sk-ts-highlight { 
+    color: var(--yt-sk-accent); 
+    font-weight: bold; 
+    text-shadow: 0 0 6px var(--yt-sk-accent-bg); 
+}
+
+/* Settings Tab */
+.yt-sk-section-title { 
+    font-size: 11px; 
+    color: var(--yt-sk-text-muted); 
+    font-weight: 700;
+    text-transform: uppercase; 
+    letter-spacing: 0.6px; 
+    margin-top: 4px;
+    margin-bottom: 2px;
+}
+
+.yt-sk-shortcut-grid { 
+    display: grid; 
+    grid-template-columns: 1fr 1fr; 
+    gap: 8px; 
+}
+
+.yt-sk-shortcut-item { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 3px; 
+}
+
+.yt-sk-shortcut-item label { 
+    font-size: 10px; 
+    color: var(--yt-sk-text-muted); 
+}
+
+.yt-sk-shortcut-input { 
+    background: var(--yt-sk-input-bg); 
+    border: 1px solid var(--yt-sk-input-border); 
+    color: var(--yt-sk-accent); 
+    padding: 7px; 
+    font-size: 11px; 
+    border-radius: 6px; 
+    text-align: center; 
+    cursor: pointer; 
+    font-weight: bold; 
+    transition: 0.2s;
+}
+
+.yt-sk-shortcut-input:hover { 
+    background: var(--yt-sk-item-hover); 
+    border-color: var(--yt-sk-accent-border);
+}
+
+.yt-sk-turso-input { 
+    width: 100%; 
+    box-sizing: border-box; 
+    margin-bottom: 6px; 
+    padding: 8px 10px; 
+    font-size: 11px; 
+    background: var(--yt-sk-input-bg); 
+    border: 1px solid var(--yt-sk-input-border); 
+    border-radius: 6px; 
+    color: var(--yt-sk-input-text); 
+    transition: border 0.2s;
+}
+
+.yt-sk-turso-input:focus { 
+    outline: none; 
+    border-color: var(--yt-sk-accent); 
+}
+
+#yt-sk-btn-save-settings {
+    width: 100%; 
+    padding: 9px; 
+    cursor: pointer; 
+    border: 1px solid var(--yt-sk-accent-border); 
+    border-radius: 8px; 
+    background: var(--yt-sk-accent-bg); 
+    color: var(--yt-sk-accent); 
+    font-size: 11px; 
+    font-weight: 700; 
+    transition: 0.2s;
+    margin-top: 4px;
+}
+
+#yt-sk-btn-save-settings:hover { 
+    background: var(--yt-sk-accent); 
+    color: #ffffff;
+    border-color: var(--yt-sk-accent);
+}
+
+/* Toggle Switch */
+.yt-sk-switch {
+    position: relative;
+    display: inline-block;
+    width: 38px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+.yt-sk-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.yt-sk-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--yt-sk-btn-border);
+    transition: .3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 20px;
+}
+
+.yt-sk-slider:before {
+    position: absolute;
+    content: "";
+    height: 14px;
+    width: 14px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 50%;
+}
+
+.yt-sk-switch input:checked + .yt-sk-slider {
+    background-color: var(--yt-sk-accent);
+}
+
+.yt-sk-switch input:checked + .yt-sk-slider:before {
+    transform: translateX(18px);
+    background-color: #ffffff;
+}
+
+/* Footer */
+.yt-sk-footer {
+    text-align: center;
+    font-size: 10px;
+    color: var(--yt-sk-text-muted);
+    padding: 9px 16px;
+    background: var(--yt-sk-footer-bg);
+    border-top: 1px solid var(--yt-sk-border);
+    user-select: none;
+}
+
+.yt-sk-footer a {
+    color: #ff3366;
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s;
+}
+
+.yt-sk-footer a:hover {
+    color: var(--yt-sk-accent);
+    text-decoration: underline;
+}
