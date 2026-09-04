@@ -239,7 +239,18 @@ function createDashboard() {
                 </label>
             </div>
 
-            <div class="yt-sk-section-title" style="margin-top:4px;">Auto Comment on YouTube</div>
+            <div class="yt-sk-toggle-row">
+                <div class="yt-sk-toggle-text">
+                    <div class="yt-sk-toggle-title">Auto Save to DB & Post Comment</div>
+                    <div class="yt-sk-toggle-desc">Automatically save to Turso DB & post comment on YouTube</div>
+                </div>
+                <label class="yt-sk-switch">
+                    <input type="checkbox" id="yt-sk-auto-save-sync">
+                    <span class="yt-sk-slider"></span>
+                </label>
+            </div>
+
+            <div class="yt-sk-section-title" style="margin-top:4px;">Manual Save Preferences</div>
             <div class="yt-sk-toggle-row">
                 <div class="yt-sk-toggle-text">
                     <div class="yt-sk-toggle-title">Post timestamps as comment</div>
@@ -363,7 +374,7 @@ function createDashboard() {
         'tursoUrl', 'tursoToken', 
         'aiProvider', 'aiToken', 'aiModel', 'aiBaseUrl',
         'openrouterKey', 'openrouterModel', 'shortcuts',
-        'autoComment', 'showMiniWidget', 'autoGenerate'
+        'autoComment', 'showMiniWidget', 'autoGenerate', 'autoSaveSync'
     ], (res) => {
         if (res.tursoUrl) urlInput.value = res.tursoUrl;
         if (res.tursoToken) tokenInput.value = res.tursoToken;
@@ -374,6 +385,15 @@ function createDashboard() {
             autoGenToggle.checked = !!res.autoGenerate;
             autoGenToggle.onchange = () => {
                 chrome.storage.local.set({ autoGenerate: autoGenToggle.checked });
+            };
+        }
+
+        // Auto Save to DB & Post Comment toggle
+        const autoSaveSyncToggle = document.getElementById('yt-sk-auto-save-sync');
+        if (autoSaveSyncToggle) {
+            autoSaveSyncToggle.checked = !!res.autoSaveSync;
+            autoSaveSyncToggle.onchange = () => {
+                chrome.storage.local.set({ autoSaveSync: autoSaveSyncToggle.checked });
             };
         }
 
@@ -564,6 +584,7 @@ function createDashboard() {
 
         const autoComment = document.getElementById('yt-sk-auto-comment').checked;
         const autoGenerate = document.getElementById('yt-sk-auto-generate')?.checked || false;
+        const autoSaveSync = document.getElementById('yt-sk-auto-save-sync')?.checked || false;
         const miniChecked = document.getElementById('yt-sk-show-mini-widget')?.checked || false;
 
         setStatus('SAVING...');
@@ -571,6 +592,7 @@ function createDashboard() {
             aiProvider: prov,
             autoComment: autoComment,
             autoGenerate: autoGenerate,
+            autoSaveSync: autoSaveSync,
             showMiniWidget: miniChecked
         };
         showMiniWidget = miniChecked;
@@ -1117,6 +1139,32 @@ async function checkAndTriggerAutoGeneration() {
                         textarea.value = generatedText;
                         textarea.oninput();
                     }
+
+                    // If Auto Save to DB & Post Comment toggle is active
+                    chrome.storage.local.get(['autoSaveSync', 'tursoUrl', 'tursoToken'], saveRes => {
+                        if (saveRes.autoSaveSync) {
+                            showToast('Auto Saving to DB & Commenting...', '☁️', 4000);
+                            
+                            // Post comment on YouTube
+                            postYouTubeComment(generatedText);
+
+                            // Save to Turso Database if configured
+                            if (saveRes.tursoUrl && saveRes.tursoToken) {
+                                chrome.runtime.sendMessage({ action: 'tursoQuery', payload: {
+                                    url: saveRes.tursoUrl.replace(/^libsql:\/\//i, 'https://'),
+                                    token: saveRes.tursoToken,
+                                    sql: "INSERT INTO video_timestamps (video_id, timestamps) VALUES (?, ?) ON CONFLICT(video_id) DO UPDATE SET timestamps = excluded.timestamps;",
+                                    args: [{type: "text", value: videoId}, {type: "text", value: generatedText}]
+                                }}, dbRes => {
+                                    if (dbRes && dbRes.success) {
+                                        showToast('Saved to DB & Comment Posted!', '🎉', 4500);
+                                    } else {
+                                        console.warn("Auto DB save error:", dbRes);
+                                    }
+                                });
+                            }
+                        }
+                    });
                 } else {
                     const err = r?.error || 'AI generation failed';
                     console.error("Auto Timestamp Maker Error:", err);
