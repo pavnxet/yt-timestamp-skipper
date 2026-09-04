@@ -1,8 +1,7 @@
 /* 
  * YT Smart Chapters Pro v3.0
- * Original Author: pavnxet
+ * made with 💖 by pavnxet
  * GitHub: https://github.com/pavnxet/yt-timestamp-skipper
- * License: MIT with Attribution Requirement (see LICENSE)
  */
 /* Dynamic Glassmorphism for the floating widget */
 #yt-skipper-mini-widget {
@@ -347,6 +346,41 @@
 #yt-sk-mode option { 
     background: var(--yt-sk-bg); 
     color: var(--yt-sk-text); 
+}
+
+/* Category Filter Chips */
+.yt-sk-filter-chips {
+    display: flex;
+    gap: 5px;
+    margin-top: 4px;
+    margin-bottom: 2px;
+}
+
+.yt-sk-chip {
+    flex: 1;
+    padding: 5px 6px;
+    font-size: 10px;
+    font-weight: 600;
+    border-radius: 6px;
+    border: 1px solid var(--yt-sk-btn-border);
+    background: var(--yt-sk-btn-bg);
+    color: var(--yt-sk-text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.yt-sk-chip:hover {
+    background: var(--yt-sk-btn-hover);
+    color: var(--yt-sk-text);
+}
+
+.yt-sk-chip.active {
+    background: var(--yt-sk-accent-bg);
+    border-color: var(--yt-sk-accent);
+    color: var(--yt-sk-accent);
+    font-weight: 700;
 }
 
 .yt-sk-list { 

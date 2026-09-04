@@ -1,15 +1,12 @@
 /**
- * YT Smart Chapters Pro v3.0
- * Original Author: pavnxet
+ * YT Smart Chapters Pro v2.0
+ * made with 💖 by pavnxet
  * GitHub: https://github.com/pavnxet/yt-timestamp-skipper
- * License: MIT with Attribution Requirement (see LICENSE)
  */
-
-const __PAVNXET_AUTHOR__ = "pavnxet";
-const __PAVNXET_SOURCE__ = "https://github.com/pavnxet/yt-timestamp-skipper";
-
 let timestamps = [];
 let titles = [];
+let allParsedChapters = []; // [{t: number, title: string, category: 'ques'|'ans'|'explain'|'other'}]
+let currentChapterFilter = 'all'; // 'all' | 'ques' | 'ans' | 'explain'
 let lastActiveIdx = -1;
 let currentMode = 'normal';
 let currentRawText = '';
@@ -120,8 +117,6 @@ function createDashboard() {
     if (dashboard) return;
     dashboard = document.createElement('div');
     dashboard.id = 'yt-skipper-dashboard';
-    dashboard.setAttribute('data-author', __PAVNXET_AUTHOR__);
-    dashboard.setAttribute('data-repo', __PAVNXET_SOURCE__);
     dashboard.innerHTML = `
         <div class="yt-sk-header" id="yt-sk-header" title="Double click to Minimize / Expand">
             <div class="yt-sk-header-left">
@@ -146,6 +141,15 @@ function createDashboard() {
                 <option value="normal">Mode: Normal Navigation</option>
                 <option value="loop">Mode: Loop Current Chapter</option>
             </select>
+
+            <!-- Chapter Category Filter Chips -->
+            <div class="yt-sk-filter-chips" id="yt-sk-filter-chips">
+                <button class="yt-sk-chip active" data-filter="all" title="Show all extracted timestamps">All</button>
+                <button class="yt-sk-chip" data-filter="ques" title="Show only Question Start timestamps">❓ Ques</button>
+                <button class="yt-sk-chip" data-filter="ans" title="Show only Correct Option timestamps">🎯 Option</button>
+                <button class="yt-sk-chip" data-filter="explain" title="Show only Answer Explanation timestamps">💡 Explain</button>
+            </div>
+
             <div class="yt-sk-list" id="yt-sk-list"></div>
             <div class="yt-sk-btn-row">
                 <button class="yt-sk-btn" id="yt-sk-btn-save" title="Save to Turso DB">☁️ Save to DB</button>
@@ -715,6 +719,14 @@ function createDashboard() {
         if (status === 'fetching') setStatus('LOADING...');
     };
 
+    // Filter Chips Event Listeners
+    dashboard.querySelectorAll('.yt-sk-chip').forEach(chip => {
+        chip.onclick = () => {
+            const filterType = chip.getAttribute('data-filter');
+            applyChapterFilter(filterType);
+        };
+    });
+
     window.refreshDashboard = function() {
         if (!dashboard) return;
         if (document.activeElement !== textarea) {
@@ -773,10 +785,49 @@ function formatTime(sec) {
     return `${h?h+':':''}${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
 }
 
+function applyChapterFilter(filterType) {
+    currentChapterFilter = filterType || 'all';
+    
+    // Update chip active classes
+    const chipContainer = document.getElementById('yt-sk-filter-chips');
+    if (chipContainer) {
+        chipContainer.querySelectorAll('.yt-sk-chip').forEach(btn => {
+            if (btn.getAttribute('data-filter') === currentChapterFilter) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+    }
+
+    // Filter items
+    let filtered = [];
+    if (currentChapterFilter === 'all') {
+        filtered = [...allParsedChapters];
+    } else {
+        filtered = allParsedChapters.filter(item => {
+            if (item.category === currentChapterFilter) return true;
+            // Also handle merged categories e.g. 'ques & ans' or title matches
+            if (currentChapterFilter === 'ques' && item.title.toLowerCase().includes('question')) return true;
+            if (currentChapterFilter === 'ans' && (item.title.toLowerCase().includes('correct option') || item.title.toLowerCase().includes('answer start'))) return true;
+            if (currentChapterFilter === 'explain' && item.title.toLowerCase().includes('explanation')) return true;
+            return false;
+        });
+    }
+
+    timestamps = filtered.map(x => x.t);
+    titles = filtered.map(x => x.title);
+    renderMarkers();
+    if (window.refreshDashboard) window.refreshDashboard();
+}
+
 function updateStateFromText(text) {
     if (!text) text = '';
     currentRawText = text;
-    timestamps = []; titles = [];
+    allParsedChapters = [];
+    
+    const tempItems = []; // {t: number, title: string, category: string}
+
     text.split('\n').filter(l => l.trim()).forEach(line => {
         // Skip markdown table header separators like |---|---|
         if (/^\|?[\s\-:|]+\|?$/.test(line.trim())) return;
@@ -796,34 +847,30 @@ function updateStateFromText(text) {
 
                 const tsRegex = /\b\d{1,2}(?::\d{2}){1,2}\b/;
 
-                // 1. Question Start Timestamp
+                // 1. Question Start Timestamp (ques)
                 const matchQ = qStart.match(tsRegex);
                 if (matchQ) {
                     const secQ = parseToSeconds(matchQ[0]);
                     let label = `${qNum}: Question Start`;
                     if (optLetter && optLetter !== 'N/A' && optLetter !== 'Unclear') label += ` (Ans: ${optLetter})`;
-                    timestamps.push(secQ);
-                    titles.push(label);
+                    tempItems.push({ t: secQ, title: label, category: 'ques' });
                 }
 
-                // 2. Correct Option Timestamp
+                // 2. Correct Option Timestamp (ans)
                 const matchOpt = optTs.match(tsRegex);
                 if (matchOpt && optTs !== 'N/A') {
                     const secOpt = parseToSeconds(matchOpt[0]);
-                    // Only add if not identical timestamp or give distinct label
                     let label = `${qNum}: Correct Option`;
                     if (optLetter && optLetter !== 'N/A' && optLetter !== 'Unclear') label += ` (${optLetter})`;
-                    timestamps.push(secOpt);
-                    titles.push(label);
+                    tempItems.push({ t: secOpt, title: label, category: 'ans' });
                 }
 
-                // 3. Answer Explanation Start Timestamp
+                // 3. Answer Explanation Start Timestamp (explain)
                 const matchAns = ansStart.match(tsRegex);
                 if (matchAns && ansStart !== 'N/A') {
                     const secAns = parseToSeconds(matchAns[0]);
                     let label = `${qNum}: Answer Explanation`;
-                    timestamps.push(secAns);
-                    titles.push(label);
+                    tempItems.push({ t: secAns, title: label, category: 'explain' });
                 }
                 return;
             }
@@ -837,29 +884,38 @@ function updateStateFromText(text) {
             
             let titlePart = line.split(tsString).slice(1).join(tsString); 
             titlePart = titlePart.replace(/^[-:–—\s.|]+/, '').replace(/\|+$/, '').trim();
+            const label = titlePart || 'Chapter';
+            
+            // Detect category from title if present
+            let category = 'other';
+            const lower = label.toLowerCase();
+            if (lower.includes('question') || lower.includes('ques')) category = 'ques';
+            else if (lower.includes('correct option') || lower.includes('option') || lower.includes('ans:')) category = 'ans';
+            else if (lower.includes('explanation') || lower.includes('explain')) category = 'explain';
 
-            timestamps.push(seconds);
-            titles.push(titlePart || 'Chapter');
+            tempItems.push({ t: seconds, title: label, category });
         }
     });
+
     // Sort and merge items that have the exact same timestamp
-    const sorted = timestamps.map((t,i) => ({t, title: titles[i]})).sort((a,b) => a.t - b.t);
+    const sorted = tempItems.sort((a,b) => a.t - b.t);
     const merged = [];
     sorted.forEach(item => {
         if (merged.length > 0 && merged[merged.length - 1].t === item.t) {
-            // Same second: combine label (e.g., Q1: Correct Option (B) / Answer Explanation)
+            // Same second: combine label and merge categories if needed
             if (!merged[merged.length - 1].title.includes(item.title)) {
                 merged[merged.length - 1].title += ` & ${item.title.split(': ').slice(1).join(': ')}`;
+            }
+            if (merged[merged.length - 1].category !== item.category) {
+                merged[merged.length - 1].category += ` & ${item.category}`;
             }
         } else {
             merged.push(item);
         }
     });
 
-    timestamps = merged.map(x => x.t);
-    titles = merged.map(x => x.title);
-    renderMarkers();
-    if (window.refreshDashboard) window.refreshDashboard();
+    allParsedChapters = merged;
+    applyChapterFilter(currentChapterFilter);
 }
 
 function renderMarkers() {
