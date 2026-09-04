@@ -149,37 +149,60 @@ async function generateChapters(text) {
         provider = 'aikit';
     }
 
-    // --- Smart Chunking for Long Transcripts (2-3+ hour videos) ---
-    // If text exceeds ~25,000 characters, chunk it chronologically and merge
-    const CHUNK_CHAR_LIMIT = 24000;
-    if (text.length > CHUNK_CHAR_LIMIT) {
-        console.log(`Large transcript detected (${text.length} chars). Splitting into chronological chunks...`);
-        const lines = text.split('\n');
-        const chunks = [];
-        let currentChunk = [];
-        let currentLen = 0;
+    // --- Time-Based Chunking for Long Transcripts (1 hour / 3600s per chunk) ---
+    // Instead of random character cutoffs, we split intelligently by 1-hour video blocks
+    const lines = text.split('\n');
+    const tsRegex = /\b(\d{1,2}(?::\d{2}){1,2})\b/;
 
+    function parseSec(tsStr) {
+        if (!tsStr) return 0;
+        const p = tsStr.trim().split(':').map(Number);
+        if (p.length === 3) return p[0] * 3600 + p[1] * 60 + p[2];
+        if (p.length === 2) return p[0] * 60 + p[1];
+        return p[0] || 0;
+    }
+
+    // Find the max timestamp in the transcript to know video length
+    let maxTimestampSec = 0;
+    for (const line of lines) {
+        const m = line.match(tsRegex);
+        if (m) {
+            const s = parseSec(m[1]);
+            if (s > maxTimestampSec) maxTimestampSec = s;
+        }
+    }
+
+    const ONE_HOUR = 3600; // 3600 seconds = 1 hour
+    if (maxTimestampSec > ONE_HOUR + 300) { // More than 1 hour (with 5 min grace)
+        const totalHours = Math.ceil(maxTimestampSec / ONE_HOUR);
+        console.log(`Long lecture detected (~${(maxTimestampSec / 3600).toFixed(1)} hrs). Splitting into ${totalHours} hourly chunks (1 hour per chunk)...`);
+
+        const hourChunks = [];
+        for (let h = 0; h < totalHours; h++) {
+            hourChunks.push([]);
+        }
+
+        let currentHourBucket = 0;
         for (const line of lines) {
-            currentChunk.push(line);
-            currentLen += line.length + 1;
-            if (currentLen >= CHUNK_CHAR_LIMIT) {
-                chunks.push(currentChunk.join('\n'));
-                currentChunk = [];
-                currentLen = 0;
+            const m = line.match(tsRegex);
+            if (m) {
+                const s = parseSec(m[1]);
+                currentHourBucket = Math.min(totalHours - 1, Math.floor(s / ONE_HOUR));
             }
-        }
-        if (currentChunk.length > 0) {
-            chunks.push(currentChunk.join('\n'));
+            hourChunks[currentHourBucket].push(line);
         }
 
-        console.log(`Processing ${chunks.length} chunks sequentially...`);
+        const validChunks = hourChunks
+            .map(c => c.join('\n'))
+            .filter(c => c.trim().length > 0);
+
+        console.log(`Created ${validChunks.length} hourly chunks. Processing sequentially...`);
         const tableRows = [];
 
-        for (let i = 0; i < chunks.length; i++) {
-            console.log(`Processing chunk ${i + 1}/${chunks.length}...`);
-            const chunkResult = await callAiForChapters(chunks[i], provider, config);
+        for (let i = 0; i < validChunks.length; i++) {
+            console.log(`Processing Hour ${i + 1}/${validChunks.length}...`);
+            const chunkResult = await callAiForChapters(validChunks[i], provider, config);
             if (chunkResult) {
-                // Extract table lines
                 chunkResult.split('\n').forEach(l => {
                     const trimmed = l.trim();
                     if (trimmed.startsWith('|') && !trimmed.toLowerCase().includes('question start') && !/^\|?[\s\-:|]+\|?$/.test(trimmed)) {
@@ -191,7 +214,6 @@ async function generateChapters(text) {
 
         if (tableRows.length > 0) {
             const header = "| Q# | Question Start | Correct Option Timestamp | Answer Start | Correct Option |\n| -- | -------------- | ------------------------ | ------------ | -------------- |";
-            // Renumber questions sequentially Q1, Q2, Q3...
             let qCounter = 1;
             const renumberedRows = tableRows.map(row => {
                 const parts = row.split('|');

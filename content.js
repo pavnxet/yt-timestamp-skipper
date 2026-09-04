@@ -1596,12 +1596,12 @@ async function extractYouTubeTranscriptWithTimestamps() {
     // Step 3: Click the transcript button to open the panel
     transcriptBtn.click();
 
-    // Step 4: Wait for transcript segments to load (polling up to 12 seconds)
+    // Step 4: Wait for transcript segments to load (polling up to 30 seconds for long videos)
     const transcriptText = await new Promise((resolve) => {
         let attempts = 0;
         const intervalId = setInterval(() => {
             attempts++;
-            const panel = document.querySelector('ytd-engagement-panel-section-list-renderer[target-id="engagement-panel-searchable-transcript"] #content');
+            const panel = document.querySelector('ytd-engagement-panel-section-list-renderer[target-id="engagement-panel-searchable-transcript"] #content, ytd-transcript-renderer');
             if (panel && panel.querySelector('ytd-transcript-segment-renderer')) {
                 clearInterval(intervalId);
                 const result = collectTranscriptSegments(panel);
@@ -1609,7 +1609,7 @@ async function extractYouTubeTranscriptWithTimestamps() {
                 return;
             }
 
-            if (attempts > 24) { // 12 seconds
+            if (attempts > 60) { // 30 seconds
                 clearInterval(intervalId);
                 console.error("Timed out waiting for transcript segments to load.");
                 resolve(null);
