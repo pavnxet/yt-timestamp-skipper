@@ -739,6 +739,13 @@ function createDashboard() {
                 if (v) v.currentTime = Math.max(0, sec - 2); 
             };
             list.appendChild(item);
+
+            // Auto-scroll to keep currently active chapter in view as time progresses
+            if (i === lastActiveIdx) {
+                requestAnimationFrame(() => {
+                    item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                });
+            }
         });
     };
 }
