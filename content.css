@@ -104,28 +104,28 @@
 
 /* HIGH-CONTRAST LIGHT THEME GLASSMORPHISM (Never blends into YouTube white background) */
 #yt-skipper-dashboard.yt-sk-light-theme {
-    --yt-sk-bg: rgba(248, 250, 253, 0.88);
-    --yt-sk-border: rgba(0, 0, 0, 0.16);
-    --yt-sk-shadow: 0 24px 60px rgba(0, 0, 0, 0.18), 0 4px 16px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.08);
-    --yt-sk-text: #1a202c;
-    --yt-sk-text-muted: #4a5568;
-    --yt-sk-header-bg: rgba(0, 0, 0, 0.03);
-    --yt-sk-tab-bar-bg: rgba(0, 0, 0, 0.06);
+    --yt-sk-bg: rgba(255, 255, 255, 0.94);
+    --yt-sk-border: rgba(0, 0, 0, 0.18);
+    --yt-sk-shadow: 0 28px 64px rgba(0, 0, 0, 0.22), 0 6px 20px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.08);
+    --yt-sk-text: #0f172a;
+    --yt-sk-text-muted: #334155;
+    --yt-sk-header-bg: rgba(241, 245, 249, 0.85);
+    --yt-sk-tab-bar-bg: rgba(226, 232, 240, 0.7);
     --yt-sk-tab-active-bg: #ffffff;
-    --yt-sk-card-bg: rgba(255, 255, 255, 0.75);
+    --yt-sk-card-bg: #f8fafc;
     --yt-sk-card-border: rgba(0, 0, 0, 0.12);
-    --yt-sk-btn-bg: rgba(255, 255, 255, 0.85);
-    --yt-sk-btn-border: rgba(0, 0, 0, 0.15);
+    --yt-sk-btn-bg: #f1f5f9;
+    --yt-sk-btn-border: rgba(0, 0, 0, 0.16);
     --yt-sk-btn-hover: #ffffff;
     --yt-sk-accent: #0284c7;
-    --yt-sk-accent-bg: rgba(2, 132, 199, 0.12);
-    --yt-sk-accent-border: rgba(2, 132, 199, 0.35);
-    --yt-sk-item-hover: rgba(2, 132, 199, 0.08);
-    --yt-sk-input-bg: rgba(255, 255, 255, 0.9);
-    --yt-sk-input-border: rgba(0, 0, 0, 0.18);
-    --yt-sk-input-text: #1a202c;
+    --yt-sk-accent-bg: rgba(2, 132, 199, 0.14);
+    --yt-sk-accent-border: rgba(2, 132, 199, 0.4);
+    --yt-sk-item-hover: rgba(2, 132, 199, 0.1);
+    --yt-sk-input-bg: #ffffff;
+    --yt-sk-input-border: rgba(0, 0, 0, 0.22);
+    --yt-sk-input-text: #0f172a;
     --yt-sk-caret: #0284c7;
-    --yt-sk-footer-bg: rgba(0, 0, 0, 0.04);
+    --yt-sk-footer-bg: rgba(241, 245, 249, 0.85);
     --yt-sk-blur: 32px;
     --yt-sk-saturate: 190%;
 }
@@ -626,6 +626,40 @@
     background: var(--yt-sk-accent); 
     color: #ffffff;
     border-color: var(--yt-sk-accent);
+}
+
+/* Settings Toggle Rows */
+.yt-sk-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--yt-sk-btn-bg);
+    padding: 8px 10px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    border: 1px solid var(--yt-sk-btn-border);
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.yt-sk-toggle-row:hover {
+    background: var(--yt-sk-btn-hover);
+}
+
+.yt-sk-toggle-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.yt-sk-toggle-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--yt-sk-text);
+}
+
+.yt-sk-toggle-desc {
+    font-size: 9.5px;
+    color: var(--yt-sk-text-muted);
 }
 
 /* Toggle Switch */

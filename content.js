@@ -228,10 +228,10 @@ function createDashboard() {
             <input type="password" id="yt-sk-turso-token" class="yt-sk-turso-input" placeholder="Turso Auth Token">
 
             <div class="yt-sk-section-title" style="margin-top:8px;">Auto Timestamp Maker (AI)</div>
-            <div class="yt-sk-toggle-row" style="display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,0.04); padding:8px 10px; border-radius:6px; margin-bottom:8px; border:1px solid rgba(255,255,255,0.08);">
-                <div>
-                    <div style="font-size:11px; font-weight:600; color:#fff;">Auto Generate on Video Open</div>
-                    <div style="font-size:9.5px; color:rgba(255,255,255,0.5);">Auto-extract transcript & generate chapters with AI</div>
+            <div class="yt-sk-toggle-row">
+                <div class="yt-sk-toggle-text">
+                    <div class="yt-sk-toggle-title">Auto Generate on Video Open</div>
+                    <div class="yt-sk-toggle-desc">Auto-extract transcript & generate chapters with AI</div>
                 </div>
                 <label class="yt-sk-switch">
                     <input type="checkbox" id="yt-sk-auto-generate">
@@ -240,10 +240,10 @@ function createDashboard() {
             </div>
 
             <div class="yt-sk-section-title" style="margin-top:4px;">Auto Comment on YouTube</div>
-            <div class="yt-sk-toggle-row" style="display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,0.04); padding:8px 10px; border-radius:6px; margin-bottom:8px; border:1px solid rgba(255,255,255,0.08);">
-                <div>
-                    <div style="font-size:11px; font-weight:600; color:#fff;">Post timestamps as comment</div>
-                    <div style="font-size:9.5px; color:rgba(255,255,255,0.5);">Auto-post concise Q# & Ans on YouTube when saving</div>
+            <div class="yt-sk-toggle-row">
+                <div class="yt-sk-toggle-text">
+                    <div class="yt-sk-toggle-title">Post timestamps as comment</div>
+                    <div class="yt-sk-toggle-desc">Auto-post concise Q# & Ans on YouTube when saving</div>
                 </div>
                 <label class="yt-sk-switch">
                     <input type="checkbox" id="yt-sk-auto-comment">
@@ -252,10 +252,10 @@ function createDashboard() {
             </div>
 
             <div class="yt-sk-section-title" style="margin-top:4px;">Mini Floating Player</div>
-            <div class="yt-sk-toggle-row" style="display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,0.04); padding:8px 10px; border-radius:6px; margin-bottom:8px; border:1px solid rgba(255,255,255,0.08);">
-                <div>
-                    <div style="font-size:11px; font-weight:600; color:#fff;">Show Mini Player Widget</div>
-                    <div style="font-size:9.5px; color:rgba(255,255,255,0.5);">Floating bar at bottom with next/prev buttons</div>
+            <div class="yt-sk-toggle-row">
+                <div class="yt-sk-toggle-text">
+                    <div class="yt-sk-toggle-title">Show Mini Player Widget</div>
+                    <div class="yt-sk-toggle-desc">Floating bar at bottom with next/prev buttons</div>
                 </div>
                 <label class="yt-sk-switch">
                     <input type="checkbox" id="yt-sk-show-mini-widget">
