@@ -979,36 +979,46 @@ function renderMarkers() {
 }
 
 function loadFromDBOrDefault(forceShowToast = false) {
-    chrome.storage.local.get(['tursoUrl', 'tursoToken'], (res) => {
-        if (!res.tursoUrl || !res.tursoToken) {
-            if (forceShowToast && dashboard) document.getElementById('yt-sk-status').textContent = 'NO DB URL';
-            return loadFromDescription();
-        }
-        const vid = new URLSearchParams(window.location.search).get("v");
-        if (!vid) return loadFromDescription();
-
-        chrome.runtime.sendMessage({
-            action: 'tursoQuery',
-            payload: {
-                url: res.tursoUrl.replace(/^libsql:\/\//i, 'https://'),
-                token: res.tursoToken,
-                sql: "SELECT timestamps FROM video_timestamps WHERE video_id = ?;",
-                args: [{type: "text", value: vid}]
-            }
-        }, response => {
-            if (response && response.success && response.data.results[1].response.result.rows.length > 0) {
-                updateStateFromText(response.data.results[1].response.result.rows[0][0].value);
-                if (forceShowToast && dashboard) {
-                    const st = document.getElementById('yt-sk-status');
-                    st.textContent = 'LOADED'; st.style.color = '#00e676';
-                }
-            } else {
-                if (forceShowToast && dashboard) document.getElementById('yt-sk-status').textContent = 'NO DB DATA';
+    return new Promise((resolve) => {
+        chrome.storage.local.get(['tursoUrl', 'tursoToken'], (res) => {
+            if (!res.tursoUrl || !res.tursoToken) {
+                if (forceShowToast && dashboard) document.getElementById('yt-sk-status').textContent = 'NO DB URL';
                 loadFromDescription();
+                resolve(timestamps.length > 0);
+                return;
             }
+            const vid = new URLSearchParams(window.location.search).get("v");
+            if (!vid) {
+                loadFromDescription();
+                resolve(timestamps.length > 0);
+                return;
+            }
+
+            chrome.runtime.sendMessage({
+                action: 'tursoQuery',
+                payload: {
+                    url: res.tursoUrl.replace(/^libsql:\/\//i, 'https://'),
+                    token: res.tursoToken,
+                    sql: "SELECT timestamps FROM video_timestamps WHERE video_id = ?;",
+                    args: [{type: "text", value: vid}]
+                }
+            }, response => {
+                if (response && response.success && response.data.results[1]?.response?.result?.rows?.length > 0) {
+                    const rowVal = response.data.results[1].response.result.rows[0][0].value;
+                    updateStateFromText(rowVal);
+                    if (forceShowToast && dashboard) {
+                        const st = document.getElementById('yt-sk-status');
+                        st.textContent = 'LOADED'; st.style.color = '#00e676';
+                    }
+                    resolve(true); // Found in Turso DB!
+                } else {
+                    if (forceShowToast && dashboard) document.getElementById('yt-sk-status').textContent = 'NO DB DATA';
+                    loadFromDescription();
+                    resolve(timestamps.length > 0);
+                }
+            });
         });
     });
-    return 'fetching';
 }
 
 function loadFromDescription() {
@@ -1178,16 +1188,27 @@ async function checkAndTriggerAutoGeneration() {
     });
 }
 
+async function onVideoPageLoaded() {
+    const video = document.querySelector('video');
+    if (!video) return;
+
+    renderMarkers();
+    const foundInDB = await loadFromDBOrDefault();
+    if (foundInDB && timestamps.length > 0) {
+        showToast(`Loaded ${timestamps.length} chapters from Cloud Database!`, '☁️', 3500);
+        return; // Already exists in DB - NO AI FETCH NEEDED!
+    }
+
+    // Only if not found in DB or description, trigger Auto Timestamp Maker
+    checkAndTriggerAutoGeneration();
+}
+
 let lastUrl = window.location.href;
 const observer = new MutationObserver(() => {
     if (document.querySelector('video') && window.location.href !== lastUrl) {
         lastUrl = window.location.href;
         timestamps = []; currentRawText = '';
-        setTimeout(() => { 
-            renderMarkers(); 
-            loadFromDBOrDefault(); 
-            setTimeout(checkAndTriggerAutoGeneration, 2500);
-        }, 1500);
+        setTimeout(onVideoPageLoaded, 1200);
     }
     syncDashboardTheme();
 });
@@ -1200,10 +1221,7 @@ const htmlThemeObserver = new MutationObserver(() => {
 htmlThemeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['dark'] });
 
 createMiniWidget();
-setTimeout(() => {
-    loadFromDBOrDefault();
-    setTimeout(checkAndTriggerAutoGeneration, 2500);
-}, 2000);
+setTimeout(onVideoPageLoaded, 1500);
 
 // --- Auto Comment on YouTube Feature ---
 function formatCommentText(rawText) {
