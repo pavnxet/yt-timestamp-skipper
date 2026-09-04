@@ -1,12 +1,8 @@
 /**
  * YT Smart Chapters Pro v3.0
- * Original Author & Maintainer: pavnxet
- * Official Repository: https://github.com/pavnxet/yt-timestamp-skipper
- * License: MIT with Attribution Requirement (see LICENSE)
+ * made with 💖 by pavnxet
+ * GitHub: https://github.com/pavnxet/yt-timestamp-skipper
  */
-
-const __PAVNXET_ORIGIN__ = "https://github.com/pavnxet/yt-timestamp-skipper";
-const __PAVNXET_SIGNATURE__ = "YT-SKIPPER-PRO-PAVNXET-2026";
 
 const DEFAULT_AIKIT_URL = "https://claude.aikit.club/qwen.aikit.club/v1";
 const DEFAULT_AIKIT_TOKEN = "";
@@ -137,14 +133,15 @@ async function verifyAiConnection(payload) {
 }
 
 async function generateChapters(text) {
-    console.log("Generating chapters for text:", text.substring(0, 50) + "...");
+    console.log("Generating chapters for text length:", text.length);
     
     const config = await new Promise(resolve => chrome.storage.local.get([
         'aiProvider', 
         'aiToken', 
         'aiModel', 
         'aiBaseUrl', 
-        'openrouterKey'
+        'openrouterKey',
+        'openrouterModel'
     ], resolve));
 
     let provider = config.aiProvider;
@@ -152,6 +149,66 @@ async function generateChapters(text) {
         provider = 'aikit';
     }
 
+    // --- Smart Chunking for Long Transcripts (2-3+ hour videos) ---
+    // If text exceeds ~25,000 characters, chunk it chronologically and merge
+    const CHUNK_CHAR_LIMIT = 24000;
+    if (text.length > CHUNK_CHAR_LIMIT) {
+        console.log(`Large transcript detected (${text.length} chars). Splitting into chronological chunks...`);
+        const lines = text.split('\n');
+        const chunks = [];
+        let currentChunk = [];
+        let currentLen = 0;
+
+        for (const line of lines) {
+            currentChunk.push(line);
+            currentLen += line.length + 1;
+            if (currentLen >= CHUNK_CHAR_LIMIT) {
+                chunks.push(currentChunk.join('\n'));
+                currentChunk = [];
+                currentLen = 0;
+            }
+        }
+        if (currentChunk.length > 0) {
+            chunks.push(currentChunk.join('\n'));
+        }
+
+        console.log(`Processing ${chunks.length} chunks sequentially...`);
+        const tableRows = [];
+
+        for (let i = 0; i < chunks.length; i++) {
+            console.log(`Processing chunk ${i + 1}/${chunks.length}...`);
+            const chunkResult = await callAiForChapters(chunks[i], provider, config);
+            if (chunkResult) {
+                // Extract table lines
+                chunkResult.split('\n').forEach(l => {
+                    const trimmed = l.trim();
+                    if (trimmed.startsWith('|') && !trimmed.toLowerCase().includes('question start') && !/^\|?[\s\-:|]+\|?$/.test(trimmed)) {
+                        tableRows.push(trimmed);
+                    }
+                });
+            }
+        }
+
+        if (tableRows.length > 0) {
+            const header = "| Q# | Question Start | Correct Option Timestamp | Answer Start | Correct Option |\n| -- | -------------- | ------------------------ | ------------ | -------------- |";
+            // Renumber questions sequentially Q1, Q2, Q3...
+            let qCounter = 1;
+            const renumberedRows = tableRows.map(row => {
+                const parts = row.split('|');
+                if (parts.length >= 6) {
+                    parts[1] = ` Q${qCounter++} `;
+                    return parts.join('|');
+                }
+                return row;
+            });
+            return `${header}\n${renumberedRows.join('\n')}`;
+        }
+    }
+
+    return await callAiForChapters(text, provider, config);
+}
+
+async function callAiForChapters(textChunk, provider, config) {
     const prompt = `## ROLE
 
 You are an expert **video/audio lecture analyst and timestamp extraction specialist**. Your task is to analyze the entire recording carefully and extract structured, second-accurate timestamps for every multiple-choice question discussed by the teacher.
@@ -263,10 +320,8 @@ Before producing the final table, internally verify every row:
 * Are rows in exact chronological order?
 * Have any timestamps or answers been guessed?
 
-If any result is uncertain, resolve it by reviewing the relevant portion of the recording again rather than guessing.
-
 Text/Transcript to process:
-${text}`;
+${textChunk}`;
 
     if (provider === 'aikit') {
         const token = (config.aiToken && config.aiToken.trim()) ? config.aiToken.trim() : DEFAULT_AIKIT_TOKEN;
@@ -300,15 +355,13 @@ ${text}`;
 
         const data = await resp.json();
         const rawContent = data.content?.[0]?.text || '';
-        // Clean any metadata comment like <!-- qwen_metadata: ... -->
         const cleaned = rawContent.replace(/<!--\s*qwen_metadata:.*?-->/gs, '').trim();
-        console.log("AIKit chapters generated successfully.");
         return cleaned;
 
     } else {
-        // OpenRouter Provider
+        // OpenRouter Provider (Fixed bug: using config.openrouterModel instead of aiModel)
         const apiKey = config.openrouterKey;
-        const model = config.aiModel || 'google/gemma-4-31b-it:free';
+        const model = (config.openrouterModel && config.openrouterModel.trim()) ? config.openrouterModel.trim() : 'google/gemma-4-31b-it:free';
 
         if (!apiKey) {
             throw new Error('OpenRouter API key not configured. Check settings.');
@@ -337,7 +390,6 @@ ${text}`;
         }
 
         const data = await response.json();
-        console.log("OpenRouter AI result received successfully.");
         return data.choices?.[0]?.message?.content || '';
     }
 }

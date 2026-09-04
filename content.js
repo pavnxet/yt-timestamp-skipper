@@ -1089,8 +1089,9 @@ function loadFromDBOrDefault(forceShowToast = false) {
                     args: [{type: "text", value: vid}]
                 }
             }, response => {
-                if (response && response.success && response.data.results[1]?.response?.result?.rows?.length > 0) {
-                    const rowVal = response.data.results[1].response.result.rows[0][0].value;
+                const rows = response?.data?.results?.[1]?.response?.result?.rows;
+                if (response && response.success && rows && rows.length > 0 && rows[0]?.[0]?.value) {
+                    const rowVal = rows[0][0].value;
                     updateStateFromText(rowVal);
                     if (forceShowToast && dashboard) {
                         const st = document.getElementById('yt-sk-status');
@@ -1185,6 +1186,21 @@ function showToast(msg, icon = '⚡', duration = 4500) {
     }, duration);
 }
 
+// Unlock audio on first user click anywhere in the page (satisfies Chrome Autoplay Policy)
+let audioUnlocked = false;
+function unlockAudio() {
+    if (audioUnlocked) return;
+    audioUnlocked = true;
+    try {
+        const dummyAudio = new Audio();
+        dummyAudio.play().catch(() => {});
+    } catch (_) {}
+    document.removeEventListener('click', unlockAudio);
+    document.removeEventListener('keydown', unlockAudio);
+}
+document.addEventListener('click', unlockAudio, { once: true });
+document.addEventListener('keydown', unlockAudio, { once: true });
+
 // --- Audio Alert on AI Completion ---
 function playCompletionSound() {
     chrome.storage.local.get(['soundEnabled', 'soundUrl', 'soundVolume', 'soundCustomData'], res => {
@@ -1201,15 +1217,18 @@ function playCompletionSound() {
         try {
             const audio = new Audio(src);
             audio.volume = Math.max(0, Math.min(1, vol));
-            audio.play().catch(e => {
-                console.warn("Audio playback blocked or failed:", e);
-                // Fallback attempt with bundled file if custom URL had CORS/network error
-                if (src !== chrome.runtime.getURL('anime-wow.mp3')) {
-                    const fallback = new Audio(chrome.runtime.getURL('anime-wow.mp3'));
-                    fallback.volume = Math.max(0, Math.min(1, vol));
-                    fallback.play().catch(() => {});
-                }
-            });
+            const playPromise = audio.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(e => {
+                    console.warn("Audio playback blocked by browser autoplay policy or network error:", e);
+                    // Fallback attempt with bundled file if custom URL had CORS/network error
+                    if (src !== chrome.runtime.getURL('anime-wow.mp3')) {
+                        const fallback = new Audio(chrome.runtime.getURL('anime-wow.mp3'));
+                        fallback.volume = Math.max(0, Math.min(1, vol));
+                        fallback.play().catch(() => {});
+                    }
+                });
+            }
         } catch (err) {
             console.error("Audio error:", err);
         }
@@ -1350,13 +1369,21 @@ async function onVideoPageLoaded() {
 }
 
 let lastUrl = window.location.href;
-const observer = new MutationObserver(() => {
-    if (document.querySelector('video') && window.location.href !== lastUrl) {
+function handleNavigationChange() {
+    if (window.location.href !== lastUrl) {
         lastUrl = window.location.href;
         timestamps = []; currentRawText = '';
-        setTimeout(onVideoPageLoaded, 1200);
+        setTimeout(onVideoPageLoaded, 1000);
     }
     syncDashboardTheme();
+}
+
+// 1. YouTube custom SPA event (fires instantly when navigating between videos)
+window.addEventListener('yt-navigate-finish', handleNavigationChange);
+
+// 2. DOM MutationObserver fallback
+const observer = new MutationObserver(() => {
+    handleNavigationChange();
 });
 observer.observe(document.body, { childList: true, subtree: true });
 
@@ -1367,7 +1394,7 @@ const htmlThemeObserver = new MutationObserver(() => {
 htmlThemeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['dark'] });
 
 createMiniWidget();
-setTimeout(onVideoPageLoaded, 1500);
+setTimeout(onVideoPageLoaded, 1200);
 
 // --- Auto Comment on YouTube Feature ---
 function formatCommentText(rawText) {
