@@ -1,8 +1,13 @@
 /**
- * YT Smart Chapters Pro v2.0
- * made with 💖 by pavnxet
+ * YT Smart Chapters Pro v3.0
+ * Original Author: pavnxet
  * GitHub: https://github.com/pavnxet/yt-timestamp-skipper
+ * License: MIT with Attribution Requirement (see LICENSE)
  */
+
+const __PAVNXET_AUTHOR__ = "pavnxet";
+const __PAVNXET_SOURCE__ = "https://github.com/pavnxet/yt-timestamp-skipper";
+
 let timestamps = [];
 let titles = [];
 let lastActiveIdx = -1;
@@ -115,6 +120,8 @@ function createDashboard() {
     if (dashboard) return;
     dashboard = document.createElement('div');
     dashboard.id = 'yt-skipper-dashboard';
+    dashboard.setAttribute('data-author', __PAVNXET_AUTHOR__);
+    dashboard.setAttribute('data-repo', __PAVNXET_SOURCE__);
     dashboard.innerHTML = `
         <div class="yt-sk-header" id="yt-sk-header" title="Double click to Minimize / Expand">
             <div class="yt-sk-header-left">

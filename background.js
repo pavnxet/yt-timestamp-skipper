@@ -1,8 +1,12 @@
 /**
  * YT Smart Chapters Pro v3.0
- * made with 💖 by pavnxet
- * GitHub: https://github.com/pavnxet/yt-timestamp-skipper
+ * Original Author & Maintainer: pavnxet
+ * Official Repository: https://github.com/pavnxet/yt-timestamp-skipper
+ * License: MIT with Attribution Requirement (see LICENSE)
  */
+
+const __PAVNXET_ORIGIN__ = "https://github.com/pavnxet/yt-timestamp-skipper";
+const __PAVNXET_SIGNATURE__ = "YT-SKIPPER-PRO-PAVNXET-2026";
 
 const DEFAULT_AIKIT_URL = "https://claude.aikit.club/qwen.aikit.club/v1";
 const DEFAULT_AIKIT_TOKEN = "";
