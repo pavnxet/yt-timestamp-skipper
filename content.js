@@ -227,7 +227,19 @@ function createDashboard() {
             <input type="text" id="yt-sk-turso-url" class="yt-sk-turso-input" placeholder="Turso Database URL">
             <input type="password" id="yt-sk-turso-token" class="yt-sk-turso-input" placeholder="Turso Auth Token">
 
-            <div class="yt-sk-section-title" style="margin-top:8px;">Auto Comment on YouTube</div>
+            <div class="yt-sk-section-title" style="margin-top:8px;">Auto Timestamp Maker (AI)</div>
+            <div class="yt-sk-toggle-row" style="display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,0.04); padding:8px 10px; border-radius:6px; margin-bottom:8px; border:1px solid rgba(255,255,255,0.08);">
+                <div>
+                    <div style="font-size:11px; font-weight:600; color:#fff;">Auto Generate on Video Open</div>
+                    <div style="font-size:9.5px; color:rgba(255,255,255,0.5);">Auto-extract transcript & generate chapters with AI</div>
+                </div>
+                <label class="yt-sk-switch">
+                    <input type="checkbox" id="yt-sk-auto-generate">
+                    <span class="yt-sk-slider"></span>
+                </label>
+            </div>
+
+            <div class="yt-sk-section-title" style="margin-top:4px;">Auto Comment on YouTube</div>
             <div class="yt-sk-toggle-row" style="display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,0.04); padding:8px 10px; border-radius:6px; margin-bottom:8px; border:1px solid rgba(255,255,255,0.08);">
                 <div>
                     <div style="font-size:11px; font-weight:600; color:#fff;">Post timestamps as comment</div>
@@ -351,10 +363,20 @@ function createDashboard() {
         'tursoUrl', 'tursoToken', 
         'aiProvider', 'aiToken', 'aiModel', 'aiBaseUrl',
         'openrouterKey', 'openrouterModel', 'shortcuts',
-        'autoComment', 'showMiniWidget'
+        'autoComment', 'showMiniWidget', 'autoGenerate'
     ], (res) => {
         if (res.tursoUrl) urlInput.value = res.tursoUrl;
         if (res.tursoToken) tokenInput.value = res.tursoToken;
+        
+        // Auto Generate toggle
+        const autoGenToggle = document.getElementById('yt-sk-auto-generate');
+        if (autoGenToggle) {
+            autoGenToggle.checked = !!res.autoGenerate;
+            autoGenToggle.onchange = () => {
+                chrome.storage.local.set({ autoGenerate: autoGenToggle.checked });
+            };
+        }
+
         if (typeof res.autoComment !== 'undefined') {
             document.getElementById('yt-sk-auto-comment').checked = !!res.autoComment;
         } else {
@@ -541,12 +563,14 @@ function createDashboard() {
         const prov = aiProviderSelect.value;
 
         const autoComment = document.getElementById('yt-sk-auto-comment').checked;
+        const autoGenerate = document.getElementById('yt-sk-auto-generate')?.checked || false;
         const miniChecked = document.getElementById('yt-sk-show-mini-widget')?.checked || false;
 
         setStatus('SAVING...');
         const toSave = { 
             aiProvider: prov,
             autoComment: autoComment,
+            autoGenerate: autoGenerate,
             showMiniWidget: miniChecked
         };
         showMiniWidget = miniChecked;
@@ -1027,12 +1051,95 @@ setInterval(() => {
     }
 }, 500);
 
+// --- Floating Toast Notification ---
+function showToast(msg, icon = '⚡', duration = 4500) {
+    let toast = document.getElementById('yt-sk-toast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'yt-sk-toast';
+        document.body.appendChild(toast);
+    }
+    toast.innerHTML = `<span class="yt-sk-toast-icon">${icon}</span><span class="yt-sk-toast-msg">${msg}</span>`;
+    toast.className = 'yt-sk-toast-visible';
+    clearTimeout(toast._timeout);
+    toast._timeout = setTimeout(() => {
+        toast.className = '';
+    }, duration);
+}
+
+// --- Auto Timestamp Generation on Video Load ---
+let isAutoGenerating = false;
+let lastProcessedVideoId = null;
+
+async function checkAndTriggerAutoGeneration() {
+    const video = document.querySelector('video');
+    const urlParams = new URLSearchParams(window.location.search);
+    const videoId = urlParams.get('v');
+
+    if (!video || !videoId) return;
+    if (videoId === lastProcessedVideoId || isAutoGenerating) return;
+
+    chrome.storage.local.get(['autoGenerate', 'aiProvider', 'aiToken', 'openrouterKey'], async (res) => {
+        if (!res.autoGenerate) return;
+
+        // Ensure AI key/token is available
+        const prov = res.aiProvider || 'aikit';
+        if (prov === 'aikit' && !res.aiToken) return;
+        if (prov === 'openrouter' && !res.openrouterKey) return;
+
+        // If timestamps already exist from DB or description, skip auto-generation
+        if (timestamps.length > 0) return;
+
+        isAutoGenerating = true;
+        lastProcessedVideoId = videoId;
+        showToast('Auto Timestamp Maker: Fetching transcript...', '⏳', 3500);
+
+        try {
+            const transcript = await extractYouTubeTranscriptWithTimestamps();
+            if (!transcript || !transcript.trim()) {
+                console.log("Auto Timestamp Maker: No transcript found for this video.");
+                isAutoGenerating = false;
+                return;
+            }
+
+            showToast('Auto Timestamp Maker: AI is generating chapters...', '🧠', 5000);
+
+            chrome.runtime.sendMessage({ action: 'generateChapters', text: transcript }, r => {
+                isAutoGenerating = false;
+                if (r && r.success && r.data) {
+                    const generatedText = r.data.trim();
+                    updateStateFromText(generatedText);
+                    const count = timestamps.length;
+                    showToast(`✨ Timestamps Generated! (${count} chapters ready)`, '✅', 5000);
+                    
+                    const textarea = document.getElementById('yt-sk-textarea');
+                    if (textarea) {
+                        textarea.value = generatedText;
+                        textarea.oninput();
+                    }
+                } else {
+                    const err = r?.error || 'AI generation failed';
+                    console.error("Auto Timestamp Maker Error:", err);
+                    showToast(`AI Error: ${err}`, '⚠️', 4000);
+                }
+            });
+        } catch (err) {
+            isAutoGenerating = false;
+            console.error("Auto Timestamp Maker Exception:", err);
+        }
+    });
+}
+
 let lastUrl = window.location.href;
 const observer = new MutationObserver(() => {
     if (document.querySelector('video') && window.location.href !== lastUrl) {
         lastUrl = window.location.href;
         timestamps = []; currentRawText = '';
-        setTimeout(() => { renderMarkers(); loadFromDBOrDefault(); }, 1500);
+        setTimeout(() => { 
+            renderMarkers(); 
+            loadFromDBOrDefault(); 
+            setTimeout(checkAndTriggerAutoGeneration, 2500);
+        }, 1500);
     }
     syncDashboardTheme();
 });
@@ -1045,7 +1152,10 @@ const htmlThemeObserver = new MutationObserver(() => {
 htmlThemeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['dark'] });
 
 createMiniWidget();
-setTimeout(loadFromDBOrDefault, 2000);
+setTimeout(() => {
+    loadFromDBOrDefault();
+    setTimeout(checkAndTriggerAutoGeneration, 2500);
+}, 2000);
 
 // --- Auto Comment on YouTube Feature ---
 function formatCommentText(rawText) {
