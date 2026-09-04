@@ -1064,17 +1064,40 @@ function renderMarkers() {
     });
 }
 
+function resetVideoState() {
+    timestamps = [];
+    titles = [];
+    allParsedChapters = [];
+    currentRawText = '';
+    lastActiveIdx = -1;
+    renderMarkers();
+    if (window.refreshDashboard) window.refreshDashboard();
+    const textarea = document.getElementById('yt-sk-textarea');
+    if (textarea) {
+        textarea.value = '';
+        if (typeof applyHighlights === 'function') applyHighlights('');
+    }
+}
+
 function loadFromDBOrDefault(forceShowToast = false) {
     return new Promise((resolve) => {
+        const vid = new URLSearchParams(window.location.search).get("v");
+        if (!vid) {
+            loadFromDescription();
+            resolve(timestamps.length > 0);
+            return;
+        }
+
         chrome.storage.local.get(['tursoUrl', 'tursoToken'], (res) => {
-            if (!res.tursoUrl || !res.tursoToken) {
-                if (forceShowToast && dashboard) document.getElementById('yt-sk-status').textContent = 'NO DB URL';
-                loadFromDescription();
-                resolve(timestamps.length > 0);
+            // Guard: If user navigated away while getting storage
+            const currentVid = new URLSearchParams(window.location.search).get("v");
+            if (currentVid !== vid) {
+                resolve(false);
                 return;
             }
-            const vid = new URLSearchParams(window.location.search).get("v");
-            if (!vid) {
+
+            if (!res.tursoUrl || !res.tursoToken) {
+                if (forceShowToast && dashboard) document.getElementById('yt-sk-status').textContent = 'NO DB URL';
                 loadFromDescription();
                 resolve(timestamps.length > 0);
                 return;
@@ -1089,6 +1112,13 @@ function loadFromDBOrDefault(forceShowToast = false) {
                     args: [{type: "text", value: vid}]
                 }
             }, response => {
+                // Guard: If user navigated to another video while query was executing
+                const currentVidAfterQuery = new URLSearchParams(window.location.search).get("v");
+                if (currentVidAfterQuery !== vid) {
+                    resolve(false);
+                    return;
+                }
+
                 const rows = response?.data?.results?.[1]?.response?.result?.rows;
                 if (response && response.success && rows && rows.length > 0 && rows[0]?.[0]?.value) {
                     const rowVal = rows[0][0].value;
@@ -1357,8 +1387,13 @@ async function onVideoPageLoaded() {
     const video = document.querySelector('video');
     if (!video) return;
 
-    renderMarkers();
+    const currentVid = new URLSearchParams(window.location.search).get('v');
+    if (!currentVid) return;
+
     const foundInDB = await loadFromDBOrDefault();
+    // Verify user is still on the same video after DB check
+    if (new URLSearchParams(window.location.search).get('v') !== currentVid) return;
+
     if (foundInDB && timestamps.length > 0) {
         showToast(`Loaded ${timestamps.length} chapters from Cloud Database!`, '☁️', 3500);
         return; // Already exists in DB - NO AI FETCH NEEDED!
@@ -1372,7 +1407,8 @@ let lastUrl = window.location.href;
 function handleNavigationChange() {
     if (window.location.href !== lastUrl) {
         lastUrl = window.location.href;
-        timestamps = []; currentRawText = '';
+        resetVideoState();
+        lastProcessedVideoId = null; // Allow auto-generation for the new video
         setTimeout(onVideoPageLoaded, 1000);
     }
     syncDashboardTheme();
