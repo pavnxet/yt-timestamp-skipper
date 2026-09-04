@@ -210,6 +210,12 @@ async function generateChapters(text) {
                     }
                 });
             }
+
+            // Cooldown delay between consecutive chunks to prevent Qwen / Cloudflare CAPTCHA rate limiting
+            if (i < validChunks.length - 1) {
+                console.log(`Cooling down 6 seconds before processing next hour chunk (${i + 2}/${validChunks.length})...`);
+                await new Promise(res => setTimeout(res, 6000));
+            }
         }
 
         if (tableRows.length > 0) {
