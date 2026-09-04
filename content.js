@@ -1245,6 +1245,15 @@ async function checkAndTriggerAutoGeneration() {
 
         try {
             const transcript = await extractYouTubeTranscriptWithTimestamps();
+            
+            // Check if user changed the video while fetching transcript
+            const currentVidAfterTranscript = new URLSearchParams(window.location.search).get('v');
+            if (currentVidAfterTranscript !== videoId) {
+                console.log(`Video changed from ${videoId} to ${currentVidAfterTranscript}. Aborting previous generation.`);
+                isAutoGenerating = false;
+                return;
+            }
+
             if (!transcript || !transcript.trim()) {
                 console.log("Auto Timestamp Maker: No transcript found for this video.");
                 isAutoGenerating = false;
@@ -1255,6 +1264,25 @@ async function checkAndTriggerAutoGeneration() {
 
             chrome.runtime.sendMessage({ action: 'generateChapters', text: transcript }, r => {
                 isAutoGenerating = false;
+
+                // Check if user switched video while AI was responding
+                const currentVidNow = new URLSearchParams(window.location.search).get('v');
+                if (currentVidNow !== videoId) {
+                    console.log(`AI result received for old video ${videoId}, but user is now on ${currentVidNow}. Discarding UI update & comment.`);
+                    // Still save to Turso DB in background so old video has timestamps ready for future!
+                    chrome.storage.local.get(['autoSaveSync', 'tursoUrl', 'tursoToken'], saveRes => {
+                        if (saveRes.autoSaveSync && saveRes.tursoUrl && saveRes.tursoToken && r && r.success && r.data) {
+                            chrome.runtime.sendMessage({ action: 'tursoQuery', payload: {
+                                url: saveRes.tursoUrl.replace(/^libsql:\/\//i, 'https://'),
+                                token: saveRes.tursoToken,
+                                sql: "INSERT INTO video_timestamps (video_id, timestamps) VALUES (?, ?) ON CONFLICT(video_id) DO UPDATE SET timestamps = excluded.timestamps;",
+                                args: [{type: "text", value: videoId}, {type: "text", value: r.data.trim()}]
+                            }});
+                        }
+                    });
+                    return;
+                }
+
                 if (r && r.success && r.data) {
                     const generatedText = r.data.trim();
                     updateStateFromText(generatedText);
