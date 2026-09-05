@@ -774,6 +774,12 @@ function createDashboard() {
             textarea.oninput();
         }
         
+        if (isAutoGenerating) {
+            setStatus('AI ALREADY RUNNING', '#ffb74d');
+            showToast('AI is already processing this video in background...', '⏳', 3500);
+            return;
+        }
+
         chrome.storage.local.get(['aiProvider', 'aiToken', 'openrouterKey'], res => {
             const prov = res.aiProvider || 'aikit';
             if (prov === 'aikit' && !res.aiToken) {
@@ -792,9 +798,11 @@ function createDashboard() {
             setStatus('AI GENERATING...');
             const aiBtn = document.getElementById('yt-sk-btn-ai');
             aiBtn.disabled = true;
+            isAutoGenerating = true;
 
             chrome.runtime.sendMessage({ action: 'generateChapters', text }, r => {
                 aiBtn.disabled = false;
+                isAutoGenerating = false;
                 if (r && r.success) {
                     textarea.value = r.data.trim();
                     textarea.oninput();
@@ -1166,7 +1174,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
                 textarea.value = msg.partialText;
                 if (typeof applyHighlights === 'function') applyHighlights(msg.partialText);
             }
-            showToast(`Analyzed Hour ${msg.currentHour}/${msg.totalHours} (${timestamps.length} chapters loaded)...`, '⏳', 4000);
+            showToast(`Analyzed Part ${msg.currentHour}/${msg.totalHours} (${timestamps.length} chapters loaded)...`, '⏳', 4000);
         }
         sendResponse({success: true});
     }
