@@ -13,7 +13,8 @@
     "*://*.youtube.com/*",
     "https://*.turso.io/*",
     "https://openrouter.ai/*",
-    "https://claude.aikit.club/*"
+    "https://claude.aikit.club/*",
+    "https://sponsor.ajay.app/*"
   ],
   "action": {
     "default_title": "YT Smart Chapters Pro"

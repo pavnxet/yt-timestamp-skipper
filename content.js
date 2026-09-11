@@ -3,6 +3,14 @@
  * made with 💖 by pavnxet
  * GitHub: https://github.com/pavnxet/yt-timestamp-skipper
  */
+const isExtValid = () => {
+    try {
+        return Boolean(typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id);
+    } catch (_) {
+        return false;
+    }
+};
+
 let timestamps = [];
 let titles = [];
 let allParsedChapters = []; // [{t: number, title: string, category: 'ques'|'ans'|'explain'|'other'}]
@@ -132,6 +140,7 @@ function createDashboard() {
         <div class="yt-sk-tabs">
             <button class="yt-sk-tab-btn active" data-tab="chapters">📌 Chapters</button>
             <button class="yt-sk-tab-btn" data-tab="editor">📝 Editor</button>
+            <button class="yt-sk-tab-btn" data-tab="sponsorblock">🚫 SponsorBlock</button>
             <button class="yt-sk-tab-btn" data-tab="settings">⚙️ Settings</button>
         </div>
 
@@ -157,7 +166,7 @@ function createDashboard() {
             </div>
         </div>
 
-        <!-- TAB 2: EDITOR -->
+        <!-- TAB 2: EDITOR (For Question / MCQs / Lecture Notes) -->
         <div class="yt-sk-tab-content" id="yt-sk-tab-editor">
             <div class="yt-sk-textarea-container">
                 <div id="yt-sk-textarea-highlights" class="yt-sk-textarea-layer"></div>
@@ -168,10 +177,51 @@ function createDashboard() {
                 <button class="yt-sk-btn" id="yt-sk-btn-clean" title="Sort & format timestamps">🧹 Clean</button>
                 <button class="yt-sk-btn" id="yt-sk-btn-copy" title="Copy to clipboard">📋 Copy</button>
             </div>
-            <button class="yt-sk-btn yt-sk-btn-primary" id="yt-sk-btn-ai" title="AI Generate Chapter Names">✨ AI Generate Titles</button>
+            <div class="yt-sk-btn-row" style="margin-top: 6px;">
+                <button class="yt-sk-btn yt-sk-btn-primary" id="yt-sk-btn-ai" title="AI Generate Chapter Names">✨ AI Generate Titles</button>
+            </div>
         </div>
 
-        <!-- TAB 3: SETTINGS -->
+        <!-- TAB 3: SPONSORBLOCK (Dedicated Non-Educational & Sponsor Segments) -->
+        <div class="yt-sk-tab-content" id="yt-sk-tab-sponsorblock">
+            <!-- Custom Transcript Editor Layer (Same as MCQ Editor) -->
+            <div class="yt-sk-textarea-container" id="yt-sk-sb-editor-container" style="margin-bottom: 8px;">
+                <div id="yt-sk-sb-textarea-highlights" class="yt-sk-textarea-layer"></div>
+                <textarea id="yt-sk-sb-transcript-textarea" class="yt-sk-textarea-layer" spellcheck="false" placeholder="Paste custom transcript with timestamps here or click 'Fetch Transcript'...&#10;00:15 Hello students&#10;01:20 Download our app..."></textarea>
+            </div>
+
+            <!-- Editor Action Buttons -->
+            <div class="yt-sk-btn-row" style="margin-bottom: 8px;">
+                <button class="yt-sk-btn" id="yt-sk-btn-sb-fetch-transcript" title="Auto-fetch video transcript into SponsorBlock editor">📜 Fetch Transcript</button>
+                <button class="yt-sk-btn" id="yt-sk-btn-sb-clean" title="Clean & sort timestamps">🧹 Clean</button>
+                <button class="yt-sk-btn" id="yt-sk-btn-sb-copy-transcript" title="Copy transcript to clipboard">📋 Copy</button>
+            </div>
+
+            <div class="yt-sk-btn-row" style="margin-bottom: 8px;">
+                <button class="yt-sk-btn" id="yt-sk-btn-scan-removable" style="background: rgba(255, 75, 75, 0.15); border-color: rgba(255, 75, 75, 0.4); color: #ff6b6b; font-weight:700;" title="Scan transcript for sponsors, tangents, and jokes">🚫 Scan Segments</button>
+                <button class="yt-sk-btn" id="yt-sk-btn-upload-sb" style="background: rgba(0, 242, 254, 0.15); border-color: rgba(0, 242, 254, 0.4); color: #00f2fe; font-weight:700;" title="Upload detected segments to SponsorBlock server">🚀 Upload to SB</button>
+            </div>
+
+            <div class="yt-sk-sb-toggle-view" id="yt-sk-sb-toggle-view" style="margin-bottom: 8px;">
+                <span id="yt-sk-sb-toggle-label">👁️ View: Card List</span>
+                <span style="font-size:10px; opacity:0.7;">Switch to Raw / Intervals ⇄</span>
+            </div>
+
+            <!-- Card View -->
+            <div id="yt-sk-sb-cards" class="yt-sk-sb-cards-container">
+                <div style="padding:28px 12px; text-align:center; color:rgba(255,255,255,0.4); font-size:11px;">
+                    No segments scanned yet.<br>Click <b>🚫 Scan Segments</b> to analyze.
+                </div>
+            </div>
+
+            <!-- Raw Text / Intervals View (Initially hidden) -->
+            <div id="yt-sk-sb-raw-container" style="display:none; flex-direction:column; gap:8px;">
+                <textarea id="yt-sk-sb-raw-textarea" class="yt-sk-turso-input" style="height:140px; font-family:'Fira Code', monospace; font-size:11px; line-height:1.4; resize:vertical;" placeholder="Detected table and [HH:MM:SS]-[HH:MM:SS] intervals will appear here..."></textarea>
+                <button class="yt-sk-btn" id="yt-sk-btn-copy-sb" title="Copy SponsorBlock intervals to clipboard">📋 Copy SB Intervals</button>
+            </div>
+        </div>
+
+        <!-- TAB 4: SETTINGS -->
         <div class="yt-sk-tab-content" id="yt-sk-tab-settings">
             <div class="yt-sk-section-title">Custom Shortcuts</div>
             <div class="yt-sk-shortcut-grid">
@@ -223,6 +273,15 @@ function createDashboard() {
             <button class="yt-sk-btn yt-sk-btn-primary" id="yt-sk-btn-test-ai" style="margin-top:4px; margin-bottom: 6px;">⚡ Test AI Connection</button>
             <div id="yt-sk-ai-test-result" style="display:none; font-size:11px; padding:6px 10px; border-radius:6px; margin-bottom:8px; line-height: 1.4;"></div>
 
+            <!-- SponsorBlock Integration -->
+            <div class="yt-sk-section-title" style="margin-top:6px;">SponsorBlock API Integration</div>
+            <input type="password" id="yt-sk-sb-user-id" class="yt-sk-turso-input" placeholder="SponsorBlock Private User ID (UUID)">
+            <div style="font-size:10px; color:var(--yt-sk-text-muted); margin-top:-4px; margin-bottom:6px;">Find in SponsorBlock Extension Options > Settings > Copy Private User ID.</div>
+            <select id="yt-sk-sb-category-mode" style="width:100%; padding:8px 10px; border-radius:6px; font-size:11px; background:rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.1); color:#00f2fe; cursor:pointer; outline:none; margin-bottom:8px; font-weight:600;">
+                <option value="sponsor_only">Category: Permanent "Sponsor" (Safe Default)</option>
+                <option value="mapped">Category: Map AI Categories (Sponsor / SelfPromo / Filler / Intro / Outro)</option>
+            </select>
+
             <div class="yt-sk-section-title" style="margin-top:6px;">Turso Database (Optional)</div>
             <input type="text" id="yt-sk-turso-url" class="yt-sk-turso-input" placeholder="Turso Database URL">
             <input type="password" id="yt-sk-turso-token" class="yt-sk-turso-input" placeholder="Turso Auth Token">
@@ -246,6 +305,17 @@ function createDashboard() {
                 </div>
                 <label class="yt-sk-switch">
                     <input type="checkbox" id="yt-sk-auto-save-sync">
+                    <span class="yt-sk-slider"></span>
+                </label>
+            </div>
+
+            <div class="yt-sk-toggle-row">
+                <div class="yt-sk-toggle-text">
+                    <div class="yt-sk-toggle-title">Auto SponsorBlock Segment Uploader</div>
+                    <div class="yt-sk-toggle-desc">Scan removable intervals & auto-upload to SponsorBlock after chapters</div>
+                </div>
+                <label class="yt-sk-switch">
+                    <input type="checkbox" id="yt-sk-auto-upload-sb">
                     <span class="yt-sk-slider"></span>
                 </label>
             </div>
@@ -331,6 +401,21 @@ function createDashboard() {
     const aikitUrlInput = document.getElementById('yt-sk-aikit-url');
     const openrouterKeyInput = document.getElementById('yt-sk-openrouter-key');
     const openrouterModelInput = document.getElementById('yt-sk-openrouter-model');
+    const sbUserIdInput = document.getElementById('yt-sk-sb-user-id');
+    const sbCategoryModeSelect = document.getElementById('yt-sk-sb-category-mode');
+    const sbTranscriptTextarea = document.getElementById('yt-sk-sb-transcript-textarea');
+    const sbHighlights = document.getElementById('yt-sk-sb-textarea-highlights');
+    const btnSbFetchTranscript = document.getElementById('yt-sk-btn-sb-fetch-transcript');
+    const btnSbClean = document.getElementById('yt-sk-btn-sb-clean');
+    const btnSbCopyTranscript = document.getElementById('yt-sk-btn-sb-copy-transcript');
+    const btnScanRemovable = document.getElementById('yt-sk-btn-scan-removable');
+    const btnUploadSb = document.getElementById('yt-sk-btn-upload-sb');
+    const sbCardsContainer = document.getElementById('yt-sk-sb-cards');
+    const sbRawContainer = document.getElementById('yt-sk-sb-raw-container');
+    const sbRawTextarea = document.getElementById('yt-sk-sb-raw-textarea');
+    const btnCopySb = document.getElementById('yt-sk-btn-copy-sb');
+    const sbToggleView = document.getElementById('yt-sk-sb-toggle-view');
+    const sbToggleLabel = document.getElementById('yt-sk-sb-toggle-label');
     const btnTestAi = document.getElementById('yt-sk-btn-test-ai');
     const aiTestResult = document.getElementById('yt-sk-ai-test-result');
     const btnClose = document.getElementById('yt-sk-btn-close');
@@ -398,12 +483,15 @@ function createDashboard() {
         }
     };
 
+    if (!isExtValid()) return;
     chrome.storage.local.get([
         'tursoUrl', 'tursoToken', 
         'aiProvider', 'aiToken', 'aiModel', 'aiBaseUrl',
         'openrouterKey', 'openrouterModel', 'shortcuts',
-        'autoComment', 'showMiniWidget', 'autoGenerate', 'autoSaveSync'
+        'autoComment', 'showMiniWidget', 'autoGenerate', 'autoSaveSync', 'autoUploadSb',
+        'sbUserId', 'sbCategoryMode'
     ], (res) => {
+        if (!isExtValid() || !res) return;
         if (res.tursoUrl) urlInput.value = res.tursoUrl;
         if (res.tursoToken) tokenInput.value = res.tursoToken;
         
@@ -422,6 +510,15 @@ function createDashboard() {
             autoSaveSyncToggle.checked = !!res.autoSaveSync;
             autoSaveSyncToggle.onchange = () => {
                 chrome.storage.local.set({ autoSaveSync: autoSaveSyncToggle.checked });
+            };
+        }
+
+        // Auto SponsorBlock Segment Uploader toggle
+        const autoUploadSbToggle = document.getElementById('yt-sk-auto-upload-sb');
+        if (autoUploadSbToggle) {
+            autoUploadSbToggle.checked = !!res.autoUploadSb;
+            autoUploadSbToggle.onchange = () => {
+                chrome.storage.local.set({ autoUploadSb: autoUploadSbToggle.checked });
             };
         }
 
@@ -527,6 +624,10 @@ function createDashboard() {
         // OpenRouter credentials
         if (res.openrouterKey) openrouterKeyInput.value = res.openrouterKey;
         if (res.openrouterModel) openrouterModelInput.value = res.openrouterModel;
+
+        // SponsorBlock credentials
+        if (res.sbUserId && sbUserIdInput) sbUserIdInput.value = res.sbUserId;
+        if (res.sbCategoryMode && sbCategoryModeSelect) sbCategoryModeSelect.value = res.sbCategoryMode;
 
         if (res.shortcuts) {
             shortcuts = res.shortcuts;
@@ -678,7 +779,9 @@ function createDashboard() {
             showMiniWidget: miniChecked,
             soundEnabled: soundEnabled,
             soundUrl: soundUrl,
-            soundVolume: soundVolume
+            soundVolume: soundVolume,
+            sbUserId: sbUserIdInput ? sbUserIdInput.value.trim() : '',
+            sbCategoryMode: sbCategoryModeSelect ? sbCategoryModeSelect.value : 'sponsor_only'
         };
         showMiniWidget = miniChecked;
         updateMiniWidget();
@@ -817,6 +920,403 @@ function createDashboard() {
             });
         });
     };
+
+    // --- SPONSORBLOCK TAB LOGIC & UI ---
+    let sbRawText = '';
+
+    function renderSponsorBlockCards(rawText) {
+        if (!sbCardsContainer) return;
+        if (!rawText || !rawText.trim() || rawText.includes('NO REMOVABLE SEGMENTS FOUND')) {
+            sbCardsContainer.innerHTML = `
+                <div style="padding:28px 12px; text-align:center; color:rgba(255,255,255,0.4); font-size:11px;">
+                    ${rawText.includes('NO REMOVABLE') ? '✅ No removable segments found in video.' : 'No segments scanned yet.<br>Click <b>🚫 Scan Segments</b> to analyze.'}
+                </div>
+            `;
+            return;
+        }
+
+        const lines = rawText.split('\n');
+        const parsedSegments = [];
+
+        lines.forEach(line => {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('|') && !trimmed.toLowerCase().includes('category') && !/^\|?[\s\-:|]+\|?$/.test(trimmed)) {
+                const cells = trimmed.split('|').map(c => c.trim()).filter(c => c.length > 0);
+                if (cells.length >= 4) {
+                    const idx = cells[0];
+                    const start = cells[1];
+                    const end = cells[2];
+                    const cat = (cells[3] || 'SPONSOR').toUpperCase();
+                    const reason = cells[4] || 'Non-educational segment';
+                    parsedSegments.push({ idx, start, end, cat, reason });
+                }
+            }
+        });
+
+        if (parsedSegments.length === 0) {
+            sbCardsContainer.innerHTML = `
+                <div style="padding:24px 12px; text-align:center; color:rgba(255,255,255,0.4); font-size:11px;">
+                    Scanned raw intervals ready in Raw View.
+                </div>
+            `;
+            return;
+        }
+
+        sbCardsContainer.innerHTML = '';
+        parsedSegments.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'yt-sk-sb-card';
+            const catLower = item.cat.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+
+            card.innerHTML = `
+                <div class="yt-sk-sb-card-header">
+                    <span class="yt-sk-sb-badge ${catLower}">#${item.idx} ${item.cat}</span>
+                    <span class="yt-sk-sb-timerange" title="Click to seek to start">${item.start} ➔ ${item.end}</span>
+                </div>
+                <div class="yt-sk-sb-card-reason">${item.reason}</div>
+            `;
+
+            // Click timerange to jump to video position
+            const timeSpan = card.querySelector('.yt-sk-sb-timerange');
+            if (timeSpan) {
+                timeSpan.onclick = () => {
+                    const video = document.querySelector('video');
+                    if (video) video.currentTime = parseToSeconds(item.start);
+                };
+            }
+
+            sbCardsContainer.appendChild(card);
+        });
+    }
+
+    if (sbToggleView) {
+        sbToggleView.onclick = () => {
+            if (sbCardsContainer.style.display === 'none') {
+                sbCardsContainer.style.display = 'flex';
+                sbRawContainer.style.display = 'none';
+                sbToggleLabel.textContent = '👁️ View: Card List';
+            } else {
+                sbCardsContainer.style.display = 'none';
+                sbRawContainer.style.display = 'flex';
+                sbToggleLabel.textContent = '👁️ View: Raw / Intervals';
+                if (sbRawTextarea) sbRawTextarea.value = sbRawText;
+            }
+        };
+    }
+
+    if (btnCopySb) {
+        btnCopySb.onclick = () => {
+            const val = (sbRawTextarea?.value || sbRawText || '').trim();
+            if (!val) return setStatus('NO SB DATA', '#ff4b4b');
+            navigator.clipboard.writeText(val).then(() => {
+                setStatus('SB COPIED', '#00e676');
+                showToast('SponsorBlock intervals copied to clipboard!', '📋', 3000);
+            });
+        };
+    }
+
+    // --- SponsorBlock Custom Transcript Editor Logic ---
+    function applySbHighlights(text) {
+        if (!sbHighlights) return;
+        if (!text) text = '';
+        let escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const chapterRegex = /\b\d{1,2}(?::\d{2}){1,2}\b/g;
+        escaped = escaped.replace(chapterRegex, '<span class="yt-sk-ts-highlight">$&</span>');
+        if (text.endsWith('\n')) escaped += '<br>';
+        sbHighlights.innerHTML = escaped;
+    }
+
+    if (sbTranscriptTextarea) {
+        sbTranscriptTextarea.oninput = () => applySbHighlights(sbTranscriptTextarea.value);
+        sbTranscriptTextarea.onscroll = () => {
+            if (sbHighlights) sbHighlights.scrollTop = sbTranscriptTextarea.scrollTop;
+        };
+    }
+
+    if (btnSbCopyTranscript) {
+        btnSbCopyTranscript.onclick = () => {
+            const val = sbTranscriptTextarea?.value || '';
+            if (!val.trim()) return setStatus('NO TRANSCRIPT', '#ff4b4b');
+            navigator.clipboard.writeText(val).then(() => {
+                setStatus('COPIED');
+                showToast('Transcript copied to clipboard!', '📋', 3000);
+            });
+        };
+    }
+
+    if (btnSbClean) {
+        btnSbClean.onclick = () => {
+            if (!sbTranscriptTextarea) return;
+            const text = sbTranscriptTextarea.value;
+            const tsRegex = /(?:\d{1,2}:)?\d{1,2}:\d{2}/g;
+            const matches = text.match(tsRegex);
+            if (!matches) return setStatus('NO TIMESTAMPS', '#ff4b4b');
+
+            const timeMap = new Map();
+            matches.forEach(ts => {
+                const sec = parseToSeconds(ts);
+                if (!timeMap.has(sec) || ts.length > timeMap.get(sec).length) timeMap.set(sec, ts);
+            });
+
+            const sorted = Array.from(timeMap.keys()).sort((a,b)=>a-b);
+            const cleanLines = sorted.map(sec => `${timeMap.get(sec)} Custom Marker`);
+            sbTranscriptTextarea.value = cleanLines.join('\n');
+            applySbHighlights(sbTranscriptTextarea.value);
+            setStatus('CLEANED');
+        };
+    }
+
+    if (btnSbFetchTranscript) {
+        btnSbFetchTranscript.onclick = async () => {
+            btnSbFetchTranscript.disabled = true;
+            btnSbFetchTranscript.textContent = '⏳ Fetching...';
+            setStatus('LOADING TRANSCRIPT...', '#00f2fe');
+
+            const transcript = await extractYouTubeTranscriptWithTimestamps();
+            btnSbFetchTranscript.disabled = false;
+            btnSbFetchTranscript.textContent = '📜 Fetch Transcript';
+
+            if (transcript) {
+                if (sbTranscriptTextarea) {
+                    sbTranscriptTextarea.value = transcript;
+                    applySbHighlights(transcript);
+                }
+                setStatus('TRANSCRIPT LOADED', '#00e676');
+            } else {
+                setStatus('NO TRANSCRIPT FOUND', '#ff4b4b');
+                alert('Could not fetch YouTube transcript.\nEnsure the video has captions/transcript available on YouTube.');
+            }
+        };
+    }
+
+    // --- Scan Non-Educational / Removable Content ---
+    if (btnScanRemovable) {
+        btnScanRemovable.onclick = async () => {
+            let text = sbTranscriptTextarea ? sbTranscriptTextarea.value.trim() : '';
+
+            // If SponsorBlock transcript editor is empty, autonomously fetch from YouTube!
+            if (!text) {
+                setStatus('FETCHING TRANSCRIPT...', '#00f2fe');
+                btnScanRemovable.disabled = true;
+                btnScanRemovable.textContent = '⏳ Fetching Transcript...';
+
+                text = await extractYouTubeTranscriptWithTimestamps();
+                btnScanRemovable.disabled = false;
+                btnScanRemovable.textContent = '🚫 Scan Segments';
+
+                if (!text || !text.trim()) {
+                    setStatus('NO TRANSCRIPT', '#ff4b4b');
+                    alert('Could not fetch YouTube transcript.\nEnsure captions/transcript are available for this video, or paste a custom transcript.');
+                    return;
+                }
+
+                if (sbTranscriptTextarea) {
+                    sbTranscriptTextarea.value = text;
+                    applySbHighlights(text);
+                }
+            }
+
+            if (isAutoGenerating) {
+                setStatus('AI ALREADY RUNNING', '#ffb74d');
+                showToast('AI is already processing in background...', '⏳', 3500);
+                return;
+            }
+
+            chrome.storage.local.get(['aiProvider', 'aiToken', 'openrouterKey'], res => {
+                const prov = res.aiProvider || 'aikit';
+                if (prov === 'aikit' && !res.aiToken) {
+                    setStatus('SET AI TOKEN FIRST', '#ffb74d');
+                    const setTabBtn = dashboard.querySelector('.yt-sk-tab-btn[data-tab="settings"]');
+                    if (setTabBtn) setTabBtn.click();
+                    return;
+                }
+                if (prov === 'openrouter' && !res.openrouterKey) {
+                    setStatus('SET AI KEY FIRST', '#ffb74d');
+                    const setTabBtn = dashboard.querySelector('.yt-sk-tab-btn[data-tab="settings"]');
+                    if (setTabBtn) setTabBtn.click();
+                    return;
+                }
+
+                setStatus('SCANNING SEGMENTS...');
+                btnScanRemovable.disabled = true;
+                btnScanRemovable.textContent = '⏳ Scanning...';
+                isAutoGenerating = true;
+
+                chrome.runtime.sendMessage({ action: 'analyzeRemovableSegments', text }, r => {
+                    btnScanRemovable.disabled = false;
+                    btnScanRemovable.textContent = '🚫 Scan Segments';
+                    isAutoGenerating = false;
+
+                    if (r && r.success) {
+                        sbRawText = r.data.trim();
+                        if (sbRawTextarea) sbRawTextarea.value = sbRawText;
+                        renderSponsorBlockCards(sbRawText);
+                        setStatus('SCAN COMPLETE', '#00e676');
+                        playCompletionSound();
+                        showToast('Removable segments identified & loaded in SponsorBlock tab!', '🚫', 4500);
+                    } else {
+                        const err = r?.error || 'Analysis failed';
+                        setStatus(err.length > 20 ? 'SCAN ERROR' : err.toUpperCase(), '#ff4b4b');
+                        alert('Removable Segments Error:\n' + err);
+                        console.error(r?.error);
+                    }
+                });
+            });
+        };
+    }
+
+    // --- Direct SponsorBlock API Upload ---
+    if (btnUploadSb) {
+        btnUploadSb.onclick = () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const videoId = urlParams.get('v');
+
+            if (!videoId) {
+                setStatus('NO VIDEO ID', '#ff4b4b');
+                alert('ERROR: Not on an active YouTube video page.');
+                return;
+            }
+
+            chrome.storage.local.get(['sbUserId', 'sbCategoryMode'], res => {
+                const userId = (res.sbUserId || '').trim();
+                if (!userId) {
+                    setStatus('SET USER ID FIRST', '#ffb74d');
+                    alert('SponsorBlock Private User ID is required!\nPlease enter it in Settings > SponsorBlock API Integration.');
+                    const setTabBtn = dashboard.querySelector('.yt-sk-tab-btn[data-tab="settings"]');
+                    if (setTabBtn) setTabBtn.click();
+                    const sbInput = document.getElementById('yt-sk-sb-user-id');
+                    if (sbInput) sbInput.focus();
+                    return;
+                }
+
+                if (userId.length < 32) {
+                    setStatus('INVALID USER ID', '#ff4b4b');
+                    alert(`Private User ID looks too short (${userId.length} chars).\nSponsorBlock requires the 32+ character Private User ID from the official SponsorBlock extension settings (not your public username/ID).`);
+                    const setTabBtn = dashboard.querySelector('.yt-sk-tab-btn[data-tab="settings"]');
+                    if (setTabBtn) setTabBtn.click();
+                    const sbInput = document.getElementById('yt-sk-sb-user-id');
+                    if (sbInput) sbInput.focus();
+                    return;
+                }
+
+                const rawText = (sbRawTextarea?.value || sbRawText || '').trim();
+                if (!rawText) {
+                    setStatus('NO SEGMENTS', '#ff4b4b');
+                    alert('No segments found!\nPlease click "🚫 Scan Segments" or paste intervals [MM:SS]-[MM:SS] in Raw View first.');
+                    return;
+                }
+
+                // Helper: Convert Time to Seconds
+                function timeToSec(timeStr) {
+                    const parts = timeStr.trim().split(':').reverse();
+                    let seconds = 0;
+                    for (let i = 0; i < parts.length; i++) {
+                        seconds += parseInt(parts[i], 10) * Math.pow(60, i);
+                    }
+                    return seconds;
+                }
+
+                // Parse Timestamps and categories
+                const lines = rawText.split('\n');
+                const segmentsArray = [];
+                // Support [HH:MM:SS]-[HH:MM:SS], [HH:MM:SS] - [HH:MM:SS], or plain HH:MM:SS - HH:MM:SS
+                const regex = /\[?\s*(\d{1,2}(?::\d{2}){1,2})\s*\]?\s*(?:-|–|—|to)\s*\[?\s*(\d{1,2}(?::\d{2}){1,2})\s*\]?/;
+                const categoryMode = res.sbCategoryMode || 'sponsor_only';
+
+                // Look for table line categories or default to sponsor
+                const tableCategoryMap = new Map();
+                lines.forEach(line => {
+                    const trimmed = line.trim();
+                    if (trimmed.startsWith('|') && !trimmed.toLowerCase().includes('category') && !/^\|?[\s\-:|]+\|?$/.test(trimmed)) {
+                        const cells = trimmed.split('|').map(c => c.trim()).filter(c => c.length > 0);
+                        if (cells.length >= 4) {
+                            // cells: [# , Start, End, Category, Reason]
+                            const start = cells[1];
+                            const end = cells[2];
+                            const cat = (cells[3] || '').toUpperCase();
+                            const key = `${start}-${end}`;
+                            tableCategoryMap.set(key, cat);
+                        }
+                    }
+                });
+
+                lines.forEach(line => {
+                    const trimmed = line.trim();
+                    if (trimmed.startsWith('|')) return; // Ignore table rows for intervals
+
+                    const match = trimmed.match(regex);
+                    if (match) {
+                        const startStr = match[1];
+                        const endStr = match[2];
+                        const startSec = timeToSec(startStr);
+                        const endSec = timeToSec(endStr);
+
+                        if (endSec > startSec) {
+                            let sbCategory = 'sponsor';
+                            if (categoryMode === 'mapped') {
+                                const detectedCat = (tableCategoryMap.get(`${startStr}-${endStr}`) || '').toUpperCase();
+                                if (detectedCat === 'SPONSOR') sbCategory = 'sponsor';
+                                else if (detectedCat === 'SELFPROMO') sbCategory = 'selfpromo';
+                                else if (detectedCat === 'INTERACTION') sbCategory = 'interaction';
+                                else if (detectedCat === 'INTRO') sbCategory = 'intro';
+                                else if (detectedCat === 'OUTRO') sbCategory = 'outro';
+                                else if (detectedCat === 'PREVIEW') sbCategory = 'preview';
+                                else if (detectedCat === 'FILLER' || detectedCat === 'JOKE' || detectedCat === 'NON_EDUCATIONAL' || detectedCat === 'TANGENT') sbCategory = 'filler';
+                                else sbCategory = 'sponsor'; // Fallback
+                            }
+
+                            segmentsArray.push({
+                                segment: [startSec, endSec],
+                                category: sbCategory,
+                                actionType: "skip"
+                            });
+                        }
+                    }
+                });
+
+                if (segmentsArray.length === 0) {
+                    setStatus('NO VALID INTERVALS', '#ff4b4b');
+                    alert('No valid [HH:MM:SS]-[HH:MM:SS] timestamp intervals found in the text.');
+                    return;
+                }
+
+                if (!confirm(`Ready to submit ${segmentsArray.length} removable segment(s) to SponsorBlock server?\n\nVideo ID: ${videoId}\nUser ID: ${userId.substring(0, 8)}...\nCategory Mode: ${categoryMode}`)) {
+                    return;
+                }
+
+                setStatus('UPLOADING TO SB...', '#00f2fe');
+                btnUploadSb.disabled = true;
+                btnUploadSb.textContent = '⏳ Uploading...';
+
+                const videoEl = document.querySelector('video');
+                const videoDuration = videoEl?.duration ? Math.round(videoEl.duration) : undefined;
+
+                chrome.runtime.sendMessage({
+                    action: 'submitSponsorBlock',
+                    payload: {
+                        videoId: videoId,
+                        userId: userId,
+                        segments: segmentsArray,
+                        videoDuration: videoDuration
+                    }
+                }, resp => {
+                    btnUploadSb.disabled = false;
+                    btnUploadSb.textContent = '🚀 Upload to SB';
+
+                    if (resp && resp.success) {
+                        setStatus(`UPLOADED (${segmentsArray.length})`, '#00e676');
+                        showToast(`SUCCESS: ${segmentsArray.length} segments uploaded to SponsorBlock!`, '🎉', 5000);
+                        playCompletionSound();
+                    } else {
+                        const err = resp?.error || 'Upload failed';
+                        setStatus('SB UPLOAD ERROR', '#ff4b4b');
+                        alert('SponsorBlock Upload Error:\n' + err);
+                        console.error("SponsorBlock Upload Error:", resp);
+                    }
+                });
+            });
+        };
+    }
 
     document.getElementById('yt-sk-btn-save').onclick = () => {
         const vid = new URLSearchParams(window.location.search).get("v");
@@ -1085,10 +1585,23 @@ function resetVideoState() {
         textarea.value = '';
         if (typeof applyHighlights === 'function') applyHighlights('');
     }
+    sbRawText = '';
+    if (typeof renderSponsorBlockCards === 'function') renderSponsorBlockCards('');
+    const rawSbArea = document.getElementById('yt-sk-sb-raw-textarea');
+    if (rawSbArea) rawSbArea.value = '';
+    const sbTranscriptArea = document.getElementById('yt-sk-sb-transcript-textarea');
+    if (sbTranscriptArea) {
+        sbTranscriptArea.value = '';
+        if (typeof applySbHighlights === 'function') applySbHighlights('');
+    }
 }
 
 function loadFromDBOrDefault(forceShowToast = false) {
     return new Promise((resolve) => {
+        if (!isExtValid()) {
+            resolve(false);
+            return;
+        }
         const vid = new URLSearchParams(window.location.search).get("v");
         if (!vid) {
             loadFromDescription();
@@ -1097,6 +1610,10 @@ function loadFromDBOrDefault(forceShowToast = false) {
         }
 
         chrome.storage.local.get(['tursoUrl', 'tursoToken'], (res) => {
+            if (!isExtValid()) {
+                resolve(false);
+                return;
+            }
             // Guard: If user navigated away while getting storage
             const currentVid = new URLSearchParams(window.location.search).get("v");
             if (currentVid !== vid) {
@@ -1162,9 +1679,11 @@ function loadFromDescription() {
 }
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+    if (!isExtValid()) return false;
     if (msg.action === 'toggleDashboard') {
         toggleDashboard();
         sendResponse({success: true});
+        return true;
     } else if (msg.action === 'chunkProgress') {
         // Real-time progressive UI update as each hour is analyzed
         if (msg.partialText) {
@@ -1177,6 +1696,16 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             showToast(`Analyzed Part ${msg.currentHour}/${msg.totalHours} (${timestamps.length} chapters loaded)...`, '⏳', 4000);
         }
         sendResponse({success: true});
+        return true;
+    } else if (msg.action === 'removableProgress') {
+        const statusObj = document.getElementById('yt-sk-status');
+        if (statusObj) {
+            statusObj.textContent = `SCANNING ${msg.currentHour}/${msg.totalHours}`;
+            statusObj.style.color = '#00f2fe';
+        }
+        showToast(`Analyzing part ${msg.currentHour}/${msg.totalHours}... (${msg.intervalsCount} segments found)`, '🚫', 3000);
+        sendResponse({ success: true });
+        return true;
     }
 });
 
@@ -1201,7 +1730,11 @@ document.addEventListener('keydown', e => {
     }
 });
 
-setInterval(() => {
+const trackerInterval = setInterval(() => {
+    if (!isExtValid()) {
+        clearInterval(trackerInterval);
+        return;
+    }
     const video = document.querySelector('video');
     if (!video) return;
     const curr = video.currentTime;
@@ -1253,7 +1786,9 @@ document.addEventListener('keydown', unlockAudio, { once: true });
 
 // --- Audio Alert on AI Completion ---
 function playCompletionSound() {
+    if (!isExtValid()) return;
     chrome.storage.local.get(['soundEnabled', 'soundUrl', 'soundVolume', 'soundCustomData'], res => {
+        if (!isExtValid()) return;
         // Enabled by default unless explicitly set to false
         const enabled = typeof res.soundEnabled === 'undefined' ? true : !!res.soundEnabled;
         if (!enabled) return;
@@ -1290,6 +1825,7 @@ let isAutoGenerating = false;
 let lastProcessedVideoId = null;
 
 async function checkAndTriggerAutoGeneration() {
+    if (!isExtValid()) return;
     const video = document.querySelector('video');
     const urlParams = new URLSearchParams(window.location.search);
     const videoId = urlParams.get('v');
@@ -1298,6 +1834,7 @@ async function checkAndTriggerAutoGeneration() {
     if (videoId === lastProcessedVideoId || isAutoGenerating) return;
 
     chrome.storage.local.get(['autoGenerate', 'aiProvider', 'aiToken', 'openrouterKey'], async (res) => {
+        if (!isExtValid()) return;
         if (!res.autoGenerate) return;
 
         // Ensure AI key/token is available
@@ -1366,7 +1903,7 @@ async function checkAndTriggerAutoGeneration() {
                     }
 
                     // If Auto Save to DB & Post Comment toggle is active
-                    chrome.storage.local.get(['autoSaveSync', 'tursoUrl', 'tursoToken'], saveRes => {
+                    chrome.storage.local.get(['autoSaveSync', 'autoUploadSb', 'tursoUrl', 'tursoToken', 'sbUserId', 'sbCategoryMode'], async (saveRes) => {
                         if (saveRes.autoSaveSync) {
                             showToast('Auto Saving to DB & Commenting...', '☁️', 4000);
                             
@@ -1389,6 +1926,139 @@ async function checkAndTriggerAutoGeneration() {
                                 });
                             }
                         }
+
+                        // Sequential Step 2: Auto SponsorBlock Segment Analysis & Upload
+                        if (saveRes.autoUploadSb) {
+                            // Check if still on the same video before continuing
+                            if (new URLSearchParams(window.location.search).get('v') !== videoId) return;
+
+                            const userId = (saveRes.sbUserId || '').trim();
+                            if (!userId || userId.length < 32) {
+                                showToast('⚠️ SponsorBlock User ID missing in Settings. Skipping SB upload.', '⚠️', 5000);
+                                return;
+                            }
+
+                            // 7-second cooldown to strictly prevent rate limiting
+                            showToast('Cooldown before SponsorBlock scan...', '⏳', 4000);
+                            await new Promise(resolve => setTimeout(resolve, 7000));
+
+                            // Re-check navigation after delay
+                            if (new URLSearchParams(window.location.search).get('v') !== videoId) return;
+
+                            showToast('Auto SB: Scanning removable segments...', '🚫', 4500);
+                            const sbStatusObj = document.getElementById('yt-sk-status');
+                            if (sbStatusObj) {
+                                sbStatusObj.textContent = 'SCANNING SB...';
+                                sbStatusObj.style.color = '#00f2fe';
+                            }
+
+                            chrome.runtime.sendMessage({ action: 'analyzeRemovableSegments', text: transcript }, sbResp => {
+                                if (new URLSearchParams(window.location.search).get('v') !== videoId) return;
+
+                                if (sbResp && sbResp.success && sbResp.data) {
+                                    const rawSbData = sbResp.data.trim();
+                                    sbRawText = rawSbData;
+                                    const sbRawTextarea = document.getElementById('yt-sk-sb-raw-textarea');
+                                    if (sbRawTextarea) sbRawTextarea.value = rawSbData;
+                                    renderSponsorBlockCards(rawSbData);
+
+                                    // Helper: Convert Time to Seconds
+                                    function timeToSec(timeStr) {
+                                        const parts = timeStr.trim().split(':').reverse();
+                                        let seconds = 0;
+                                        for (let i = 0; i < parts.length; i++) {
+                                            seconds += parseInt(parts[i], 10) * Math.pow(60, i);
+                                        }
+                                        return seconds;
+                                    }
+
+                                    const lines = rawSbData.split('\n');
+                                    const segmentsArray = [];
+                                    const regex = /\[?\s*(\d{1,2}(?::\d{2}){1,2})\s*\]?\s*(?:-|–|—|to)\s*\[?\s*(\d{1,2}(?::\d{2}){1,2})\s*\]?/;
+                                    const categoryMode = saveRes.sbCategoryMode || 'sponsor_only';
+
+                                    const tableCategoryMap = new Map();
+                                    lines.forEach(line => {
+                                        const trimmed = line.trim();
+                                        if (trimmed.startsWith('|') && !trimmed.toLowerCase().includes('category') && !/^\|?[\s\-:|]+\|?$/.test(trimmed)) {
+                                            const cells = trimmed.split('|').map(c => c.trim()).filter(c => c.length > 0);
+                                            if (cells.length >= 4) {
+                                                const start = cells[1];
+                                                const end = cells[2];
+                                                const cat = (cells[3] || '').toUpperCase();
+                                                tableCategoryMap.set(`${start}-${end}`, cat);
+                                            }
+                                        }
+                                    });
+
+                                    lines.forEach(line => {
+                                        const trimmed = line.trim();
+                                        if (trimmed.startsWith('|')) return;
+
+                                        const match = trimmed.match(regex);
+                                        if (match) {
+                                            const startStr = match[1];
+                                            const endStr = match[2];
+                                            const startSec = timeToSec(startStr);
+                                            const endSec = timeToSec(endStr);
+
+                                            if (endSec > startSec) {
+                                                let sbCategory = 'sponsor';
+                                                if (categoryMode === 'mapped') {
+                                                    const detectedCat = (tableCategoryMap.get(`${startStr}-${endStr}`) || '').toUpperCase();
+                                                    if (detectedCat === 'SPONSOR') sbCategory = 'sponsor';
+                                                    else if (detectedCat === 'SELFPROMO') sbCategory = 'selfpromo';
+                                                    else if (detectedCat === 'INTERACTION') sbCategory = 'interaction';
+                                                    else if (detectedCat === 'INTRO') sbCategory = 'intro';
+                                                    else if (detectedCat === 'OUTRO') sbCategory = 'outro';
+                                                    else if (detectedCat === 'PREVIEW') sbCategory = 'preview';
+                                                    else if (detectedCat === 'FILLER' || detectedCat === 'JOKE' || detectedCat === 'NON_EDUCATIONAL' || detectedCat === 'TANGENT') sbCategory = 'filler';
+                                                    else sbCategory = 'sponsor';
+                                                }
+
+                                                segmentsArray.push({
+                                                    segment: [startSec, endSec],
+                                                    category: sbCategory,
+                                                    actionType: "skip"
+                                                });
+                                            }
+                                        }
+                                    });
+
+                                    if (segmentsArray.length === 0) {
+                                        showToast('Auto SB: No removable intervals detected.', 'ℹ️', 4000);
+                                        return;
+                                    }
+
+                                    const videoEl = document.querySelector('video');
+                                    const videoDuration = videoEl?.duration ? Math.round(videoEl.duration) : undefined;
+
+                                    showToast(`Auto SB: Uploading ${segmentsArray.length} segments...`, '🚀', 4000);
+
+                                    chrome.runtime.sendMessage({
+                                        action: 'submitSponsorBlock',
+                                        payload: {
+                                            videoId: videoId,
+                                            userId: userId,
+                                            segments: segmentsArray,
+                                            videoDuration: videoDuration
+                                        }
+                                    }, uploadResp => {
+                                        if (uploadResp && uploadResp.success) {
+                                            setStatus(`AUTO SB DONE (${segmentsArray.length})`, '#00e676');
+                                            showToast(`🎉 Both Chapters & SponsorBlock (${segmentsArray.length} segments) completed!`, '🚀', 6000);
+                                            playCompletionSound();
+                                        } else {
+                                            const err = uploadResp?.error || 'SB Upload failed';
+                                            console.warn("Auto SB Upload Error:", uploadResp);
+                                            showToast(`Auto SB Error: ${err}`, '⚠️', 5000);
+                                        }
+                                    });
+                                } else {
+                                    console.warn("Auto SB scan failed:", sbResp?.error);
+                                }
+                            });
+                        }
                     });
                 } else {
                     const err = r?.error || 'AI generation failed';
@@ -1404,6 +2074,7 @@ async function checkAndTriggerAutoGeneration() {
 }
 
 async function onVideoPageLoaded() {
+    if (!isExtValid()) return;
     const video = document.querySelector('video');
     if (!video) return;
 
@@ -1411,6 +2082,7 @@ async function onVideoPageLoaded() {
     if (!currentVid) return;
 
     const foundInDB = await loadFromDBOrDefault();
+    if (!isExtValid()) return;
     // Verify user is still on the same video after DB check
     if (new URLSearchParams(window.location.search).get('v') !== currentVid) return;
 
@@ -1425,6 +2097,7 @@ async function onVideoPageLoaded() {
 
 let lastUrl = window.location.href;
 function handleNavigationChange() {
+    if (!isExtValid()) return;
     if (window.location.href !== lastUrl) {
         lastUrl = window.location.href;
         resetVideoState();
