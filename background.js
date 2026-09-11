@@ -173,6 +173,14 @@ function parseSec(tsStr) {
     return p[0] || 0;
 }
 
+function formatSec(sec) {
+    if (!sec || isNaN(sec)) sec = 0;
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = Math.floor(sec % 60);
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+}
+
 async function generateChapters(text, tabId = null) {
     console.log("Generating chapters for text length:", text.length);
     const config = await getAiConfig();
@@ -394,16 +402,85 @@ async function analyzeRemovableSegments(text, tabId = null) {
             });
             const tableStr = `${header}\n${renumbered.join('\n')}`;
             const intervalsStr = allIntervals.join('\n');
-            return `${tableStr}\n\n${intervalsStr}`;
+            const combinedResult = `${tableStr}\n\n${intervalsStr}`;
+            return ensureInitialIntroSegment(combinedResult, text);
         } else {
-            return "NO REMOVABLE SEGMENTS FOUND";
+            return ensureInitialIntroSegment("NO REMOVABLE SEGMENTS FOUND", text);
         }
     }
 
-    return await callAiForRemovableSegments(text, provider, config);
+    const singleResult = await callAiForRemovableSegments(text, provider, config);
+    return ensureInitialIntroSegment(singleResult, text);
+}
+
+function ensureInitialIntroSegment(rawResult, fullText) {
+    if (!fullText) return rawResult;
+
+    // Find the very first timestamp mentioned in the transcript
+    const tsRegex = /\b(\d{1,2}(?::\d{2}){1,2})\b/;
+    let firstSpeechSec = 0;
+    let firstSpeechTsStr = '';
+
+    for (const line of fullText.split('\n')) {
+        const m = line.match(tsRegex);
+        if (m) {
+            firstSpeechSec = parseSec(m[1]);
+            firstSpeechTsStr = m[1];
+            break;
+        }
+    }
+
+    // If first speech happens at >= 5 seconds (e.g. 12s, 15s), the gap from 0 to speech start is an intro/silence
+    if (firstSpeechSec < 5) {
+        return rawResult;
+    }
+
+    const startTs = "00:00:00";
+    const endTs = formatSec(firstSpeechSec);
+    const { rows, intervals } = parseRemovableResponse(rawResult || '');
+
+    // Check if an existing segment already covers from 00:00:00
+    let alreadyHasStartCovered = false;
+    for (const intv of intervals) {
+        const m = intv.match(/\[\s*(\d{1,2}(?::\d{2}){1,2})\s*\]\s*-\s*\[\s*(\d{1,2}(?::\d{2}){1,2})\s*\]/);
+        if (m) {
+            const s = parseSec(m[1]);
+            const e = parseSec(m[2]);
+            if (s === 0 && e >= firstSpeechSec) {
+                alreadyHasStartCovered = true;
+                break;
+            }
+        }
+    }
+
+    if (alreadyHasStartCovered) {
+        return rawResult;
+    }
+
+    // If there is an existing segment starting around 0 to firstSpeechSec, extend or insert
+    const introRow = `| 1 | ${startTs} | ${endTs} | INTRO           | Initial intro/silence before speech starts |`;
+    const introInterval = `[${startTs}]-[${endTs}]`;
+
+    // Filter out any segment that was starting at firstSpeechSec if it was classified as INTRO to avoid micro-duplication, or prepend
+    const updatedRows = [introRow, ...rows];
+    const updatedIntervals = [introInterval, ...intervals];
+
+    const header = "| # | Start    | End      | Category        | Reason                        |\n| - | -------- | -------- | --------------- | ----------------------------- |";
+    let cIndex = 1;
+    const renumbered = updatedRows.map(r => {
+        const parts = r.split('|');
+        if (parts.length >= 6) {
+            parts[1] = ` ${cIndex++} `;
+            return parts.join('|');
+        }
+        return r;
+    });
+
+    return `${header}\n${renumbered.join('\n')}\n\n${updatedIntervals.join('\n')}`;
 }
 
 function parseRemovableResponse(rawText) {
+    if (!rawText) return { rows: [], intervals: [] };
     const lines = rawText.split('\n');
     const rows = [];
     const intervals = [];
@@ -471,7 +548,8 @@ Unpaid self-promotion, promoting the teacher's own paid courses, app downloads (
 Interaction reminders such as asking viewers to like the video, subscribe to the channel, hit the bell icon, or follow social media pages.
 
 ### INTRO
-Opening greetings, festival wishes, religious prayers/chants, introductory slogans before the actual study begins.
+Opening greetings, channel intro sequences, title cards, silence/waiting at video start, festival wishes, religious prayers/chants, or introductory slogans before actual study begins.
+*CRITICAL FOR VIDEO START*: If the video's speech or transcript starts at a timestamp after 00:00:00 (e.g. at 00:12 or 00:15), the gap from [00:00:00] until the speech begins is considered INTRO/silence. If greetings or intro slogans continue after speech starts, include them in the INTRO interval starting at [00:00:00].
 
 ### OUTRO
 End cards, sign-off greetings, closing remarks, final festival wishes after the lesson is completed.
