@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YT Smart Chapters Pro — AI chapter timestamps for YouTube lectures</title>
+<meta name="description" content="A Chrome extension that turns long YouTube lectures into clickable chapter lists — AI-written questions, answers and sponsor marks, with a free prompt toolkit that works with any AI.">
+<meta property="og:title" content="YT Smart Chapters Pro">
+<meta property="og:description" content="Turn any long YouTube lecture into a clickable chapter list with AI.">
+<meta property="og:type" content="website">
+<link rel="icon" href="assets/dash_light.png">
+<style>
+/* ---------------- Claude theme tokens ---------------- */
+:root{
+  --canvas:#FAF9F5; --surface:#FFFFFF; --surface-2:#F5F4EE; --sunken:#F0EEE7;
+  --border:#E8E6DF; --border-strong:#D9D6CC;
+  --ink:#1F1E1D; --ink-2:#575653; --ink-3:#87867F;
+  --accent:#D97757; --accent-hover:#C15F3C; --accent-soft:#F6E8E1; --accent-ink:#8A3F24;
+  --success:#2F7D5B; --warning:#B4791F; --danger:#C0392B; --info:#3C6E9E;
+  --ring:rgba(217,119,87,.35);
+  --serif:"Copernicus","Tiempos Headline","Source Serif 4",Fraunces,Georgia,"Times New Roman",serif;
+  --sans:"Styrene B",Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --mono:"Berkeley Mono","JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --radius:16px; --maxw:1080px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --canvas:#1B1A18; --surface:#232220; --surface-2:#2B2A27; --sunken:#161514;
+    --border:#383632; --border-strong:#4A4741;
+    --ink:#F5F3EC; --ink-2:#C4C1B8; --ink-3:#928F86;
+    --accent:#E08A6B; --accent-hover:#EFA084; --accent-soft:rgba(217,119,87,.18); --accent-ink:#F3C4B0;
+    --success:#6FBF97; --warning:#D9A44E; --danger:#E4756A; --info:#7FA8CE;
+    --ring:rgba(224,138,107,.45);
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; background:var(--canvas); color:var(--ink);
+  font-family:var(--sans); font-size:16px; line-height:1.65;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{font-family:var(--serif); font-weight:600; line-height:1.2; letter-spacing:.1px; margin:0}
+a{color:var(--accent-ink); text-decoration:none}
+a:hover{text-decoration:underline}
+code{font-family:var(--mono); font-size:.88em; background:var(--surface-2); border:1px solid var(--border); border-radius:6px; padding:.1em .4em}
+.wrap{max-width:var(--maxw); margin:0 auto; padding:0 22px}
+.muted{color:var(--ink-3)}
+section{padding:64px 0; border-top:1px solid var(--border)}
+section:first-of-type{border-top:none}
+.eyebrow{font-size:12px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--accent-ink); margin-bottom:10px}
+.lead{font-size:18px; color:var(--ink-2); max-width:640px}
+
+/* ---------------- nav ---------------- */
+nav{
+  position:sticky; top:0; z-index:50; background:color-mix(in srgb, var(--canvas) 88%, transparent);
+  backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+}
+.nav-in{display:flex; align-items:center; gap:18px; height:60px}
+.brand{display:flex; align-items:center; gap:10px; font-family:var(--serif); font-weight:600; font-size:17px; color:var(--ink)}
+.brand:hover{text-decoration:none}
+.brand .dot{width:22px;height:22px;border-radius:7px;background:var(--accent);display:inline-block}
+.nav-links{display:flex; gap:18px; margin-left:auto; font-size:14px}
+.nav-links a{color:var(--ink-2)}
+.nav-links a:hover{color:var(--accent-ink); text-decoration:none}
+@media(max-width:720px){.nav-links{display:none}}
+
+/* ---------------- buttons ---------------- */
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  padding:12px 20px; border-radius:999px; font-weight:700; font-size:15px; font-family:var(--sans);
+  border:1px solid var(--border-strong); background:var(--surface); color:var(--ink);
+  cursor:pointer; transition:.18s; text-decoration:none;
+}
+.btn:hover{transform:translateY(-1px); border-color:var(--accent); color:var(--accent-ink); text-decoration:none}
+.btn-primary{background:var(--accent); border-color:var(--accent); color:#fff}
+.btn-primary:hover{background:var(--accent-hover); border-color:var(--accent-hover); color:#fff}
+.btn-ghost{background:transparent}
+.btn-sm{padding:8px 14px; font-size:13px}
+
+/* ---------------- hero ---------------- */
+.hero{padding:72px 0 64px}
+.hero-grid{display:grid; grid-template-columns:1.05fr .95fr; gap:48px; align-items:center}
+@media(max-width:900px){.hero-grid{grid-template-columns:1fr; gap:36px}}
+.pill{display:inline-flex; align-items:center; gap:8px; font-size:12.5px; font-weight:600; color:var(--accent-ink);
+  background:var(--accent-soft); border:1px solid var(--border); border-radius:999px; padding:5px 14px; margin-bottom:20px}
+h1{font-size:clamp(34px,5vw,52px)}
+.hero p.lead{margin:18px 0 26px}
+.cta{display:flex; gap:12px; flex-wrap:wrap}
+.hero-note{margin-top:16px; font-size:13px; color:var(--ink-3)}
+.shot{position:relative}
+.shot img{width:100%; border-radius:var(--radius); border:1px solid var(--border); box-shadow:0 24px 60px rgba(31,30,29,.18); display:block}
+.shot .glow{position:absolute; inset:-8% -6% auto -6%; height:70%; background:radial-gradient(closest-side,var(--ring),transparent); z-index:-1; filter:blur(30px)}
+
+/* ---------------- cards ---------------- */
+.grid{display:grid; gap:18px}
+.grid-3{grid-template-columns:repeat(3,1fr)}
+.grid-2{grid-template-columns:repeat(2,1fr)}
+@media(max-width:900px){.grid-3{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:620px){.grid-3,.grid-2{grid-template-columns:1fr}}
+.card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:22px}
+.card h3{font-size:17px; margin-bottom:6px}
+.card p{margin:0; color:var(--ink-2); font-size:14.5px}
+.card .ico{font-size:22px; display:block; margin-bottom:10px}
+
+/* ---------------- steps ---------------- */
+.steps{counter-reset:s; display:grid; gap:14px}
+.step{display:flex; gap:16px; align-items:flex-start; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px 20px}
+.step .n{flex:0 0 auto; width:28px; height:28px; border-radius:50%; background:var(--accent); color:#fff; font-weight:700; font-size:14px;
+  display:flex; align-items:center; justify-content:center; margin-top:2px}
+.step h4{font-size:16px; margin-bottom:2px}
+.step p{margin:0; color:var(--ink-2); font-size:14.5px}
+
+/* ---------------- table ---------------- */
+.table-wrap{overflow-x:auto; border:1px solid var(--border); border-radius:var(--radius); background:var(--surface)}
+table{width:100%; border-collapse:collapse; font-size:14.5px}
+th,td{text-align:left; padding:12px 16px; border-bottom:1px solid var(--border)}
+th{font-family:var(--serif); font-weight:600; background:var(--surface-2); color:var(--ink)}
+tr:last-child td{border-bottom:none}
+td code{white-space:nowrap}
+kbd{font-family:var(--mono); font-size:12.5px; background:var(--surface-2); border:1px solid var(--border-strong);
+  border-bottom-width:2px; border-radius:6px; padding:2px 7px; color:var(--accent-ink)}
+
+/* ---------------- toolkit ---------------- */
+.mode{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:22px; margin-bottom:16px}
+.mode-head{display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:6px}
+.mode-head h3{font-size:19px}
+.tag{font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--accent-ink);
+  background:var(--accent-soft); border:1px solid var(--border); border-radius:999px; padding:3px 10px}
+.prompt{margin-top:14px; background:var(--sunken); border:1px solid var(--border); border-radius:12px; overflow:hidden}
+.prompt-bar{display:flex; justify-content:space-between; align-items:center; gap:10px; padding:8px 10px 8px 16px;
+  background:var(--surface-2); border-bottom:1px solid var(--border)}
+.prompt-bar span{font-size:11.5px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3)}
+.prompt pre{margin:0; padding:16px 18px; font-family:var(--mono); font-size:12.5px; line-height:1.6; color:var(--ink-2);
+  white-space:pre-wrap; word-wrap:break-word; max-height:290px; overflow:auto}
+.out{font-family:var(--mono); font-size:12.5px; background:var(--surface-2); border:1px dashed var(--border-strong);
+  border-radius:10px; padding:12px 14px; color:var(--ink-2); white-space:pre-wrap; margin-top:12px}
+.note{font-size:13.5px; color:var(--ink-3); margin-top:10px}
+
+/* ---------------- faq ---------------- */
+details{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:0; margin-bottom:10px}
+summary{cursor:pointer; padding:16px 20px; font-weight:600; font-family:var(--serif); font-size:16px; list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+"; float:right; color:var(--accent); font-family:var(--sans); font-weight:700}
+details[open] summary::after{content:"–"}
+details .body{padding:0 20px 18px; color:var(--ink-2); font-size:14.5px}
+
+/* ---------------- footer ---------------- */
+footer{border-top:1px solid var(--border); background:var(--surface-2); padding:34px 0; font-size:14px; color:var(--ink-2)}
+.foot{display:flex; justify-content:space-between; gap:18px; flex-wrap:wrap; align-items:center}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:6px}
+@media (prefers-reduced-motion: reduce){*{transition:none!important; animation:none!important} html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-in">
+    <a class="brand" href="#top"><span class="dot"></span> YT Smart Chapters Pro</a>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#install">Install</a>
+      <a href="#usage">How to use</a>
+      <a href="#toolkit">Free AI toolkit</a>
+      <a href="#faq">FAQ</a>
+      <a href="https://github.com/pavnxet/yt-timestamp-skipper" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<a id="top"></a>
+<header class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="pill">● Chrome extension · Manifest V3 · v3.1</span>
+      <h1>Turn long YouTube lectures into clickable chapters.</h1>
+      <p class="lead">YT Smart Chapters Pro reads a lecture's transcript and writes a clean, timestamped chapter list for you — with the questions, the correct-option reveals, the explanations, and the sponsor segments all marked. One click. Any length of video.</p>
+      <div class="cta">
+        <a class="btn btn-primary" href="#install">Get the extension</a>
+        <a class="btn btn-ghost" href="https://github.com/pavnxet/yt-timestamp-skipper" target="_blank" rel="noopener">View on GitHub</a>
+      </div>
+      <p class="hero-note">Free and open source. Bring your own AI key — or use the free prompt toolkit with any chatbot.</p>
+    </div>
+    <div class="shot">
+      <div class="glow"></div>
+      <img src="assets/dash_light.png" alt="The YT Smart Chapters dashboard in light mode" width="460" height="760">
+    </div>
+  </div>
+</header>
+
+<section id="features">
+  <div class="wrap">
+    <div class="eyebrow">Features</div>
+    <h2>Everything a long lecture needs</h2>
+    <p class="lead">Built for students and exam aspirants who live in 2–3 hour videos.</p>
+    <div class="grid grid-3" style="margin-top:32px">
+      <div class="card"><span class="ico">🤖</span><h3>AI chapter writing</h3><p>Send the transcript to AIKit Qwen, OpenRouter, or any OpenAI-compatible endpoint and get chapter names back.</p></div>
+      <div class="card"><span class="ico">🎯</span><h3>Question &amp; answer timestamps</h3><p>For MCQ lectures, it marks where each question starts, where the option is revealed, and where the explanation begins.</p></div>
+      <div class="card"><span class="ico">🏷️</span><h3>Smart filters</h3><p>Chips for <b>All</b>, <b>Questions</b>, <b>Answers</b> and <b>Explain</b> so you can revise exactly what you need.</p></div>
+      <div class="card"><span class="ico">⏳</span><h3>Handles marathon videos</h3><p>Long transcripts are chunked automatically and merged back into one clean, numbered list — nothing gets truncated.</p></div>
+      <div class="card"><span class="ico">🚫</span><h3>Sponsor &amp; ad marks</h3><p>Detects sponsor reads, self-promo, intros, outros and filler — and can upload them to SponsorBlock for everyone.</p></div>
+      <div class="card"><span class="ico">☁️</span><h3>Cloud sync</h3><p>Save chapters to your own Turso database and reload them on any device without spending AI credits again.</p></div>
+      <div class="card"><span class="ico">💬</span><h3>Auto comment</h3><p>Optionally posts a tidy, timestamped comment under the video when you save.</p></div>
+      <div class="card"><span class="ico">⌨️</span><h3>Shortcuts &amp; mini player</h3><p>Jump between chapters with a key, loop a hard section, or use the floating mini player.</p></div>
+      <div class="card"><span class="ico">🎨</span><h3>Adaptive theme</h3><p>A calm light/dark interface that follows YouTube's own theme, in real time.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="theme">
+  <div class="wrap">
+    <div class="eyebrow">Theme</div>
+    <h2>Light and dark, in step with YouTube</h2>
+    <p class="lead">The dashboard follows YouTube's own theme in real time — no page reload, and your settings, chapters and filters never reset when it switches.</p>
+    <div class="grid grid-2" style="margin-top:30px">
+      <div class="shot"><img src="assets/dash_settings.png" alt="The Settings tab in light mode" width="460" height="760" loading="lazy"></div>
+      <div class="shot"><img src="assets/dash_dark.png" alt="The Chapters tab in dark mode" width="460" height="760" loading="lazy"></div>
+    </div>
+  </div>
+</section>
+
+<section id="install">
+  <div class="wrap">
+    <div class="eyebrow">Install</div>
+    <h2>Running in under a minute</h2>
+    <div class="steps" style="margin-top:28px">
+      <div class="step"><div class="n">1</div><div><h4>Download the extension</h4><p>Grab the latest zip from the <a href="https://github.com/pavnxet/yt-timestamp-skipper" target="_blank" rel="noopener">GitHub repository</a> and unzip it to a folder you'll keep.</p></div></div>
+      <div class="step"><div class="n">2</div><div><h4>Open Chrome's extensions page</h4><p>Go to <code>chrome://extensions/</code> and switch on <b>Developer mode</b> (top right).</p></div></div>
+      <div class="step"><div class="n">3</div><div><h4>Load it</h4><p>Click <b>Load unpacked</b> and select the unzipped folder — the one containing <code>manifest.json</code>.</p></div></div>
+      <div class="step"><div class="n">4</div><div><h4>Open a video</h4><p>Head to any YouTube video and click the extension icon. The dashboard slides in from the right.</p></div></div>
+    </div>
+    <p class="note">Works in Chrome and other Chromium browsers (Edge, Brave). No build step and no dependencies.</p>
+  </div>
+</section>
+
+<section id="usage">
+  <div class="wrap">
+    <div class="eyebrow">How to use</div>
+    <h2>One button, or full control</h2>
+    <div class="steps" style="margin-top:28px">
+      <div class="step"><div class="n">1</div><div><h4>Click “⚡ Generate everything”</h4><p>The extension reads the transcript, writes the chapters and finds the ad segments in one pass. Prefer to do it by hand? Use the <b>Editor</b> tab.</p></div></div>
+      <div class="step"><div class="n">2</div><div><h4>Read the Chapters tab</h4><p>Every chapter is clickable and jumps the video to that moment. Use the filter chips to see only questions, answers or explanations.</p></div></div>
+      <div class="step"><div class="n">3</div><div><h4>Save or share</h4><p><b>Save</b> writes to your cloud database; <b>Load</b> brings it back; <b>Copy</b> puts the list on your clipboard for notes or a YouTube description.</p></div></div>
+      <div class="step"><div class="n">4</div><div><h4>Skip the ads</h4><p>In <b>Ads &amp; Sponsors</b>, scan the transcript and upload the segments to SponsorBlock so everyone can skip them.</p></div></div>
+    </div>
+
+    <h3 style="margin:40px 0 14px">Keyboard shortcuts</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Action</th><th>Default key</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td>Next chapter</td><td><kbd>]</kbd></td><td>Jump to the next timestamp</td></tr>
+          <tr><td>Previous chapter</td><td><kbd>[</kbd></td><td>Jump to the previous timestamp</td></tr>
+          <tr><td>Add a timestamp</td><td><kbd>Alt</kbd> + <kbd>X</kbd></td><td>Insert the current time as a marker</td></tr>
+          <tr><td>Mark sponsor</td><td><kbd>Alt</kbd> + <kbd>S</kbd></td><td>Press once for start, again for end</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">Every key is rebindable in <b>Settings → Keyboard shortcuts</b>.</p>
+
+    <h3 style="margin:40px 0 14px">Settings at a glance</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Setting</th><th>Default</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>AI provider</td><td>AIKit Qwen</td><td>AIKit, OpenRouter, or any OpenAI-compatible endpoint</td></tr>
+          <tr><td>Generate chapters when a video opens</td><td>Off</td><td>Fully automatic mode</td></tr>
+          <tr><td>Auto save &amp; comment</td><td>Off</td><td>Saves to your database and posts the comment</td></tr>
+          <tr><td>Auto upload ads to SponsorBlock</td><td>Off</td><td>Runs after the chapters finish</td></tr>
+          <tr><td>Post timestamps as a comment</td><td>On</td><td>Applies to manual and automatic saves</td></tr>
+          <tr><td>Completion sound</td><td>On</td><td>Built-in chime, custom URL, or your own file</td></tr>
+          <tr><td>Mini floating player</td><td>Off</td><td>A small bar with previous / next buttons</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="toolkit">
+  <div class="wrap">
+    <div class="eyebrow">Free · works with any AI</div>
+    <h2>Process any video with any AI</h2>
+    <p class="lead">You don't need the extension — or any API key — to get value out of this. Grab the transcript of any video, paste one of these prompts into ChatGPT, Claude, Gemini or a local model, and paste the transcript after it. Three jobs, three prompts.</p>
+
+    <div class="mode" style="margin-top:30px">
+      <div class="mode-head"><span class="tag">Mode 1</span><h3>📌 Chapters</h3></div>
+      <p class="muted">A clean chapter list with a start time and a short, specific title for each segment.</p>
+      <div class="prompt">
+        <div class="prompt-bar"><span>Prompt</span><button class="btn btn-sm copy" data-copy="p1">Copy prompt</button></div>
+<pre id="p1">You are an expert video editor. I will give you a transcript whose lines already carry timestamps. Produce a chapter list.
+
+Rules:
+- Each chapter = a start timestamp + a short, specific title (3-7 words) naming the topic covered from that timestamp until the next chapter begins.
+- Break only at genuine conceptual boundaries: a new idea, definition, sub-topic, method, worked example, or a shift from theory to practice. Not at every pause.
+- Merge or drop filler (greetings, intros, sponsor reads, recaps); fold short remarks into the nearest real chapter.
+- Use the start timestamp of the FIRST line of that segment.
+- Use only timestamps that actually appear in the transcript. Never estimate, round or invent one.
+- Format timestamps as MM:SS (use HH:MM:SS only if the video runs over an hour). Never write 04:46:00.
+- Keep titles in the transcript's language. Aim for about 8-20 chapters on a 20-60 minute video - do not over-segment.
+
+Output: a list like
+- 00:00:12 - Introduction and scope of the theory
+- 00:02:40 - Core definitions
+
+Then add, under clear headings: a one-line summary per chapter; the key terms or definitions introduced; a tag per chapter ([Concept] / [Example] / [Derivation] / [Recap]); and the 3 chapters most important for revision.
+
+Transcript:
+&lt;paste the transcript here&gt;</pre>
+      </div>
+    </div>
+
+    <div class="mode">
+      <div class="mode-head"><span class="tag">Mode 2</span><h3>🚫 SponsorBlock segments</h3></div>
+      <p class="muted">Every part worth skipping, labelled and merged into clean intervals.</p>
+      <div class="prompt">
+        <div class="prompt-bar"><span>Prompt</span><button class="btn btn-sm copy" data-copy="p2">Copy prompt</button></div>
+<pre id="p2">Act as an expert educational video editor and SponsorBlock segment-extraction specialist. From the timestamped transcript below, find every portion that should be REMOVED or SKIPPED and label it with exactly one category:
+
+- SPONSOR - paid promotions, product placements, brand mentions.
+- SELFPROMO - channel merch, memberships, paid courses, social links.
+- INTERACTION - asking to like, subscribe, follow, comment, ring the bell.
+- INTRO - non-educational opener, channel bumper, greeting chatter.
+- OUTRO - end credits, thank-yous, goodbye cards.
+- FILLER - off-topic tangents, long chit-chat, technical difficulties.
+
+Rules:
+- Work only on removable-segment extraction. Do not output chapters or question timestamps.
+- Merging: if two or more removable segments run back-to-back (one ends as the next begins, or with only a few seconds between), merge them into ONE continuous segment from the start of the first to the end of the last, even across different categories. Give the merged segment the dominant category by priority: SPONSOR &gt; SELFPROMO &gt; INTERACTION &gt; INTRO &gt; OUTRO &gt; FILLER.
+- In the Reason column, name the merged elements (e.g. "Intro + Sponsor").
+- Use only timestamps that appear in the transcript. Format MM:SS (HH:MM:SS only if over an hour).
+
+Output this table:
+
+| # | Start | End | Category | Reason |
+| - | ----- | --- | -------- | ------ |
+| 1 | 01:15 | 02:40 | SPONSOR | Intro + Product promotion |
+
+Then immediately after, the automation output - only the merged intervals and dominant category, one per line:
+[MM:SS]-[MM:SS] CATEGORY
+
+If nothing is removable, return only: NO REMOVABLE SEGMENTS FOUND
+
+Transcript:
+&lt;paste the transcript here&gt;</pre>
+      </div>
+      <div class="out">[01:15]-[02:40] SPONSOR
+[06:02]-[06:20] INTERACTION</div>
+    </div>
+
+    <div class="mode">
+      <div class="mode-head"><span class="tag">Mode 3</span><h3>🎯 MCQ / question timestamps</h3></div>
+      <p class="muted">For exam-prep videos: index every question, its answer reveal and its explanation.</p>
+      <div class="prompt">
+        <div class="prompt-bar"><span>Prompt</span><button class="btn btn-sm copy" data-copy="p3">Copy prompt</button></div>
+<pre id="p3">Act as a high-precision MCQ timestamp extractor. From the timestamped transcript below, find every distinct multiple-choice question, problem-solving item, or question discussion and return its timestamps.
+
+For each question, kept in video order, capture:
+- Question Start - where the question begins.
+- Correct Option Timestamp - where the correct option is revealed or highlighted, or N/A.
+- Answer Start - where the detailed solution or explanation begins, or N/A.
+- Correct Option - a single letter (A, B, C, D) or Unclear.
+
+Rules:
+- Use only timestamps that appear in the transcript. Never guess.
+- If a timestamp is missing write N/A; if the option is unstated write Unclear.
+- Ignore rhetorical questions and follow-up chatter - only genuine exam questions count.
+
+Output ONLY this table - no preamble, no code fences:
+
+| Q# | Question Start | Correct Option Timestamp | Answer Start | Correct Option |
+| -- | -------------- | ------------------------ | ------------ | -------------- |
+| Q1 | 04:46          | 06:54                    | 05:07        | B              |
+
+Transcript:
+&lt;paste the transcript here&gt;</pre>
+      </div>
+    </div>
+
+    <h3 style="margin:36px 0 14px">How to get a transcript</h3>
+    <div class="grid grid-2">
+      <div class="card"><h3>From YouTube</h3><p>Open the video → <b>… More</b> under the title → <b>Show transcript</b>. Click the transcript panel, select all, and copy. It already carries timestamps.</p></div>
+      <div class="card"><h3>With the extension</h3><p>Install it, open a video, and press <b>📜 Get transcript</b> in the Editor tab. It fills the transcript in for you, ready to copy.</p></div>
+    </div>
+    <p class="note">The full skill, with all three prompts, is in the repo at <code>docs/toolkit/</code>.</p>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap">
+    <div class="eyebrow">FAQ</div>
+    <h2>Good to know</h2>
+    <div style="margin-top:26px">
+      <details open><summary>Is it free?</summary><div class="body">The extension is free and open source (MIT, with attribution). You bring your own AI key. And the prompt toolkit in the section above works with any free chatbot, no key at all.</div></details>
+      <details><summary>Do I need an API key?</summary><div class="body">Only if you want the in-extension AI to write chapters automatically. You can also paste timestamps by hand, load chapters from a video's description, or use the toolkit prompts in an external chatbot.</div></details>
+      <details><summary>Where is my data stored?</summary><div class="body">Settings, keys and cached chapters live in Chrome's local storage on your machine. Cloud sync to your Turso database is optional and off until you add your own database URL.</div></details>
+      <details><summary>Does it work on Shorts or live streams?</summary><div class="body">It's designed for normal watch pages where a transcript exists. Shorts and live streams usually have no transcript, so there's nothing to analyse.</div></details>
+      <details><summary>Which browsers are supported?</summary><div class="body">Chrome and Chromium-based browsers (Edge, Brave) on desktop, plus mobile YouTube pages in browsers that support extensions.</div></details>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot">
+    <div>made with 💖 by <a href="https://github.com/pavnxet" target="_blank" rel="noopener">pavnxet</a> · MIT with attribution</div>
+    <div><a href="https://github.com/pavnxet/yt-timestamp-skipper" target="_blank" rel="noopener">Source &amp; issues on GitHub</a></div>
+  </div>
+</footer>
+
+<script>
+document.querySelectorAll('.copy').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var el = document.getElementById(btn.getAttribute('data-copy'));
+    var text = el ? el.textContent : '';
+    var done = function(){ var t = btn.textContent; btn.textContent = 'Copied!'; setTimeout(function(){ btn.textContent = t; }, 1600); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, done);
+    } else {
+      var ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); } catch(e){} document.body.removeChild(ta); done();
+    }
+  });
+});
+</script>
+</body>
+</html>
