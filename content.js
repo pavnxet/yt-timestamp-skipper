@@ -3465,7 +3465,7 @@ function formatCommentText(rawText) {
         cleanComment = rawText.trim();
     }
 
-    const watermark = "\n\n━━━━━━━━━━━━━━━━━━━━\nmade with 💖 by pavnxet(https://github.com/pavnxet/yt-timestamp-skipper)";
+    const watermark = "\n\n━━━━━━━━━━━━━━━━━━━━\nmade with 💖 by pavnxet\nhttps://github.com/pavnxet/yt-timestamp-skipper";
     return cleanComment + watermark;
 }
 
