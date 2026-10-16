@@ -1,10 +1,11 @@
 {
   "manifest_version": 3,
-  "name": "YT Smart Chapters Pro v3.0",
-  "version": "3.0.0",
-  "author": "pavnxet",
-  "description": "Smart jumps, mini-player widget, and custom shortcuts. Made with 💖 by pavnxet.",
+  "name": "YT Smart Chapters Pro",
+  "version": "3.1.0",
+  "author": "pavnxet <yt-smart-chapters@pavnxet.com>",
+  "description": "Smart YouTube chapters navigation, auto AI chapter generation, custom transcript editor, and SponsorBlock integration. Built with 💖 by pavnxet.",
   "homepage_url": "https://github.com/pavnxet/yt-timestamp-skipper",
+
   "permissions": [
     "storage",
     "clipboardWrite"
@@ -14,16 +15,34 @@
     "https://*.turso.io/*",
     "https://openrouter.ai/*",
     "https://claude.aikit.club/*",
-    "https://sponsor.ajay.app/*"
+    "https://sponsor.ajay.app/*",
+    "https://transcriptapi.com/*",
+    "http://localhost:*/*",
+    "http://127.0.0.1:*/*",
+    "*://*/*"
   ],
   "action": {
-    "default_title": "YT Smart Chapters Pro"
+    "default_title": "YT Smart Chapters Pro",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
   },
   "content_scripts": [
     {
-      "matches": ["*://*.youtube.com/*"],
+      "matches": [
+        "*://*.youtube.com/*",
+        "*://m.youtube.com/*"
+      ],
       "css": ["content.css"],
-      "js": ["content.js"]
+      "js": ["content.js"],
+      "run_at": "document_idle"
     }
   ],
   "background": {
@@ -32,7 +51,10 @@
   "web_accessible_resources": [
     {
       "resources": ["anime-wow.mp3"],
-      "matches": ["*://*.youtube.com/*"]
+      "matches": [
+        "*://*.youtube.com/*",
+        "*://m.youtube.com/*"
+      ]
     }
   ]
 }

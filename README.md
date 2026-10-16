@@ -1,4 +1,4 @@
-# ⚡ YT Smart Chapters Pro (v3.0)
+# ⚡ YT Smart Chapters Pro (v3.1)
 
 > A powerhouse Chrome extension for students, competitive exam aspirants, and power viewers. Automate lecture transcript extraction, generate structured Question & Answer timestamps with AI, navigate seamlessly with keyboard shortcuts, sync chapter scroll with video playback, and auto-post comments to YouTube!
 
@@ -6,7 +6,7 @@ Made with 💖 by [pavnxet](https://github.com/pavnxet/yt-timestamp-skipper)
 
 ---
 
-## 🌟 What's New in Version 3.0?
+## 🌟 What's New in Version 3.1?
 
 * **✨ Autonomous AI Lecture Analysis**: Built-in AI extractor tailored specifically for competitive exams and MCQ lecture videos. Instantly identifies question start times, teacher answers, and explanation timestamps.
 * **🏷️ Interactive Category Filter Chips**: Filter your video timestamps instantly with 1-click filter chips:
@@ -14,7 +14,7 @@ Made with 💖 by [pavnxet](https://github.com/pavnxet/yt-timestamp-skipper)
   * **Ques**: Jump strictly to where each question begins.
   * **Ans**: Skip directly to the correct option reveal.
   * **Explain**: Jump directly to in-depth question explanations.
-* **⏳ 1-Hour Time-Based Intelligent Chunking**: Easily processes long 2-hour, 3-hour, and marathon lectures without truncating questions. Chunks transcripts by precise 1-hour segments (`3600s`) and merges them into a clean, numbered list.
+* **⏳ Time-Based Intelligent Chunking**: Easily processes long 2-hour, 3-hour, and marathon lectures without truncating questions. Chunks transcripts into precise 30-minute segments (`1800s`) or uses full-context no-chunking for 128k models like GLM 5.3.
 * **🤖 Auto Timestamp Maker on Video Open**: Automatically checks Cloud DB or runs the AI generator whenever you open any YouTube video.
 * **☁️ Cloud DB Auto-Sync & Prioritization**: Automatically queries Turso DB first; if previously saved chapters exist, it loads them in milliseconds without consuming AI quotas.
 * **🔔 Completion Sound Alert**: Plays a crisp completion sound (`anime-wow.mp3` or custom user URL/audio upload) when AI generation finishes, with volume slider and audio preview.

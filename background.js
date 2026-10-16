@@ -7,8 +7,15 @@
 const DEFAULT_AIKIT_URL = "https://claude.aikit.club/qwen.aikit.club/v1";
 const DEFAULT_AIKIT_TOKEN = "";
 const DEFAULT_AIKIT_MODEL = "qwen3.8-max";
+const DEFAULT_TRANSCRIPT_API_KEY = "sk_ZDrY9xqIVpMGguu0pWru_CEUtmHO-eMW1rWqf_Wk7WA";
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.action === 'fetchTranscriptFromApi') {
+        fetchTranscriptFromApi(request.payload || {})
+            .then(res => sendResponse({ success: true, data: res }))
+            .catch(err => sendResponse({ success: false, error: err.message }));
+        return true;
+    }
     if (request.action === 'tursoQuery') {
         const { url, token, sql, args } = request.payload;
 
@@ -44,6 +51,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         return true;
     }
 
+    if (request.action === 'fetchCustomModels') {
+        fetchCustomModels(request.baseUrl, request.apiKey)
+            .then(res => sendResponse({ success: true, data: res }))
+            .catch(err => sendResponse({ success: false, error: err.message }));
+        return true;
+    }
+
     if (request.action === 'generateChapters') {
         const tabId = sender?.tab?.id;
         generateChapters(request.text, tabId)
@@ -55,6 +69,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'analyzeRemovableSegments') {
         const tabId = sender?.tab?.id;
         analyzeRemovableSegments(request.text, tabId)
+            .then(res => sendResponse({ success: true, data: res }))
+            .catch(err => sendResponse({ success: false, error: err.message }));
+        return true;
+    }
+
+    if (request.action === 'generateAllInOne') {
+        const tabId = sender?.tab?.id;
+        generateAllInOne(request.text, tabId)
             .then(res => sendResponse({ success: true, data: res }))
             .catch(err => sendResponse({ success: false, error: err.message }));
         return true;
@@ -77,7 +99,7 @@ async function verifyAiConnection(payload) {
         if (!model.startsWith('qwen')) {
             model = DEFAULT_AIKIT_MODEL;
         }
-        const baseUrl = (payload.baseUrl && payload.baseUrl.trim()) ? payload.baseUrl.trim().replace(/\/+$/, '') : DEFAULT_AIKIT_URL;
+        let baseUrl = (payload.baseUrl && payload.baseUrl.trim()) ? payload.baseUrl.trim().replace(/\/+$/, '') : DEFAULT_AIKIT_URL;
         const endpoint = baseUrl.endsWith('/messages') ? baseUrl : `${baseUrl}/messages`;
 
         if (!token) throw new Error('AIKit Token is required.');
@@ -107,7 +129,7 @@ async function verifyAiConnection(payload) {
             label: `AIKit (${model})`
         };
 
-    } else {
+    } else if (provider === 'openrouter') {
         // OpenRouter
         const apiKey = payload.apiKey;
         const model = payload.model || 'google/gemma-4-31b-it:free';
@@ -151,6 +173,117 @@ async function verifyAiConnection(payload) {
             isFreeTier: keyData.data?.is_free_tier,
             model: model
         };
+
+
+
+    } else if (provider === 'custom') {
+        // Custom OpenAI-Compatible Provider (Local e.g. 127.0.0.1:8002/v1 or Remote)
+        let baseUrl = (payload.baseUrl && payload.baseUrl.trim()) ? payload.baseUrl.trim() : 'http://127.0.0.1:8002/v1';
+        baseUrl = baseUrl.replace(/\/+$/, '');
+        const model = (payload.model && payload.model.trim()) ? payload.model.trim() : 'qwen3.8-flash';
+        const apiKey = (payload.apiKey && payload.apiKey.trim()) ? payload.apiKey.trim() : '';
+        const name = payload.providerName || 'Custom Provider';
+
+        const endpoint = baseUrl.endsWith('/chat/completions') ? baseUrl : `${baseUrl}/chat/completions`;
+
+        const headers = { 'Content-Type': 'application/json' };
+        if (apiKey) {
+            headers['Authorization'] = `Bearer ${apiKey}`;
+        }
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 20000);
+
+        try {
+            const testResp = await fetch(endpoint, {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify({
+                    model: model,
+                    messages: [
+                        { role: 'user', content: 'Say hello in 5 words.' }
+                    ],
+                    max_tokens: 30,
+                    temperature: 0.2
+                }),
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+
+            if (!testResp.ok) {
+                const errData = await testResp.json().catch(() => ({}));
+                throw new Error(`Custom Provider Error (${testResp.status}): ${errData.error?.message || errData.message || testResp.statusText}`);
+            }
+
+            const data = await testResp.json();
+            let reply = data.choices?.[0]?.message?.content || 'OK';
+            reply = reply.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+
+            return {
+                provider: 'custom',
+                label: `${name} (${model}) - Online ⚡`,
+                model: model,
+                replyPreview: reply.substring(0, 60)
+            };
+        } catch (err) {
+            clearTimeout(timeoutId);
+            if (err.name === 'AbortError') {
+                throw new Error(`Custom Provider request timed out (20s). Check that ${baseUrl} is reachable.`);
+            }
+            throw err;
+        }
+    }
+}
+
+async function fetchCustomModels(rawBaseUrl, rawApiKey) {
+    let baseUrl = (rawBaseUrl && rawBaseUrl.trim()) ? rawBaseUrl.trim() : 'http://127.0.0.1:8002/v1';
+    baseUrl = baseUrl.replace(/\/+$/, '');
+    if (baseUrl.endsWith('/chat/completions')) {
+        baseUrl = baseUrl.replace(/\/chat\/completions$/, '');
+    }
+    const endpoint = baseUrl.endsWith('/models') ? baseUrl : `${baseUrl}/models`;
+
+    const headers = { 'Accept': 'application/json' };
+    if (rawApiKey && rawApiKey.trim()) {
+        headers['Authorization'] = `Bearer ${rawApiKey.trim()}`;
+    }
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 12000);
+
+    try {
+        const resp = await fetch(endpoint, {
+            method: 'GET',
+            headers: headers,
+            signal: controller.signal
+        });
+        clearTimeout(timer);
+
+        if (!resp.ok) {
+            const errData = await resp.json().catch(() => ({}));
+            throw new Error(`Endpoint returned HTTP ${resp.status}: ${errData.error?.message || resp.statusText}`);
+        }
+
+        const data = await resp.json();
+        let models = [];
+        if (Array.isArray(data.data)) {
+            models = data.data.map(m => (typeof m === 'string' ? m : (m.id || m.name || ''))).filter(Boolean);
+        } else if (Array.isArray(data.models)) {
+            models = data.models.map(m => (typeof m === 'string' ? m : (m.name || m.id || m.model || ''))).filter(Boolean);
+        } else if (Array.isArray(data)) {
+            models = data.map(m => (typeof m === 'string' ? m : (m.id || m.name || ''))).filter(Boolean);
+        }
+
+        return {
+            models: models,
+            baseUrl: baseUrl
+        };
+    } catch (err) {
+        clearTimeout(timer);
+        if (err.name === 'AbortError') {
+            throw new Error('Connection timed out (12s). Check if server is running.');
+        }
+        throw err;
     }
 }
 
@@ -161,7 +294,12 @@ async function getAiConfig() {
         'aiModel', 
         'aiBaseUrl', 
         'openrouterKey',
-        'openrouterModel'
+        'openrouterModel',
+        'customUrl',
+        'customApiKey',
+        'customModel',
+        'customProviderName',
+        'customProviders'
     ], resolve));
 }
 
@@ -181,6 +319,66 @@ function formatSec(sec) {
     return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
 
+function splitTextIntoCharChunks(text, maxCharLimit = 3800) {
+    const lines = text.split('\n');
+    const chunks = [];
+    let currentLines = [];
+    let currentLength = 0;
+
+    for (const line of lines) {
+        if (currentLength + line.length + 1 > maxCharLimit && currentLines.length > 0) {
+            chunks.push(currentLines.join('\n'));
+            currentLines = [line];
+            currentLength = line.length;
+        } else {
+            currentLines.push(line);
+            currentLength += line.length + 1;
+        }
+    }
+    if (currentLines.length > 0) {
+        chunks.push(currentLines.join('\n'));
+    }
+    return chunks;
+}
+
+function isNoChunkingModel(model, config = {}) {
+    if (!model && typeof config === 'object') {
+        const prov = config.aiProvider || 'aikit';
+        if (prov === 'custom') model = config.customModel;
+        else if (prov === 'openrouter') model = config.openrouterModel;
+        else model = config.aiModel;
+    }
+    const m = (model || '').toLowerCase().trim();
+    if (config.disableChunking === true || config.noChunking === true) {
+        return true;
+    }
+    return m.includes('glm-5') || m.includes('glm5') || m.includes('glm 5') || m.includes('lumo-max') || m.includes('lucky-cat');
+}
+
+function cleanAiOutput(rawContent) {
+    if (!rawContent) return '';
+    let content = rawContent;
+
+    // Remove closed thinking/reasoning blocks
+    content = content.replace(/<(?:think|thought|reasoning)>[\s\S]*?<\/(?:think|thought|reasoning)>/gi, '');
+
+    // Handle cut-off or unclosed thinking tag
+    if (/<(?:think|thought|reasoning)>/i.test(content) && !/<\/(?:think|thought|reasoning)>/i.test(content)) {
+        const tableStartMatch = content.match(/(?:\||\={2,}|#{1,4})\s*(?:Q#|#|SECTION)/i);
+        if (tableStartMatch) {
+            content = content.substring(tableStartMatch.index);
+        } else {
+            content = content.replace(/<(?:think|thought|reasoning)>[\s\S]*$/i, '');
+        }
+    }
+
+    // Remove outer code fence wrapping if present
+    content = content.trim();
+    content = content.replace(/^```(?:markdown|md)?\s*\n?/i, '').replace(/\n?```\s*$/i, '');
+
+    return content.trim();
+}
+
 async function generateChapters(text, tabId = null) {
     console.log("Generating chapters for text length:", text.length);
     const config = await getAiConfig();
@@ -188,6 +386,73 @@ async function generateChapters(text, tabId = null) {
 
     if (provider === 'openrouter' && !config.openrouterKey) {
         provider = 'aikit';
+    }
+
+    const noChunking = isNoChunkingModel(config.customModel, config);
+
+    if (noChunking) {
+        console.log(`GLM 5.3 / Full-Context Model: Sending complete transcript without chunking (${text.length} chars)...`);
+        const singleResult = await callAiForChapters(text, provider, config);
+        return singleResult || "NO CHAPTERS FOUND";
+    }
+
+    // For custom provider only: split text into ~3800 character chunks to respect server limits
+    if (provider === 'custom' && text.length > 3800) {
+        const charChunks = splitTextIntoCharChunks(text, 3800);
+        console.log(`Custom Provider: Splitting chapters into ${charChunks.length} chunks (~3800 chars each)...`);
+        const tableRows = [];
+
+        for (let i = 0; i < charChunks.length; i++) {
+            console.log(`Custom Chapter Chunk ${i + 1}/${charChunks.length}...`);
+            const chunkResult = await callAiForChapters(charChunks[i], provider, config);
+            if (chunkResult) {
+                chunkResult.split('\n').forEach(l => {
+                    const trimmed = l.trim();
+                    if (trimmed.startsWith('|') && !trimmed.toLowerCase().includes('question start') && !/^\|?[\s\-:|]+\|?$/.test(trimmed)) {
+                        tableRows.push(trimmed);
+                    }
+                });
+            }
+
+            if (tabId && tableRows.length > 0) {
+                const header = "| Q# | Question Start | Correct Option Timestamp | Answer Start | Correct Option |\n| -- | -------------- | ------------------------ | ------------ | -------------- |";
+                let tempCounter = 1;
+                const progressiveRows = tableRows.map(row => {
+                    const parts = row.split('|');
+                    if (parts.length >= 6) {
+                        parts[1] = ` Q${tempCounter++} `;
+                        return parts.join('|');
+                    }
+                    return row;
+                });
+                const progressiveText = `${header}\n${progressiveRows.join('\n')}`;
+                chrome.tabs.sendMessage(tabId, {
+                    action: 'chunkProgress',
+                    currentHour: i + 1,
+                    totalHours: charChunks.length,
+                    partialText: progressiveText
+                }).catch(() => {});
+            }
+
+            if (i < charChunks.length - 1) {
+                await new Promise(res => setTimeout(res, 2000));
+            }
+        }
+
+        if (tableRows.length > 0) {
+            const header = "| Q# | Question Start | Correct Option Timestamp | Answer Start | Correct Option |\n| -- | -------------- | ------------------------ | ------------ | -------------- |";
+            let qCounter = 1;
+            const renumberedRows = tableRows.map(row => {
+                const parts = row.split('|');
+                if (parts.length >= 6) {
+                    parts[1] = ` Q${qCounter++} `;
+                    return parts.join('|');
+                }
+                return row;
+            });
+            return `${header}\n${renumberedRows.join('\n')}`;
+        }
+        return "NO CHAPTERS FOUND";
     }
 
     const lines = text.split('\n');
@@ -334,6 +599,14 @@ async function analyzeRemovableSegments(text, tabId = null) {
         provider = 'aikit';
     }
 
+    const noChunking = isNoChunkingModel(config.customModel, config);
+
+    if (noChunking) {
+        console.log(`GLM 5.3 / Full-Context Model detected: Sending complete transcript for SponsorBlock (${text.length} chars)...`);
+        const singleResult = await callAiForRemovableSegments(text, provider, config);
+        return ensureInitialIntroSegment(singleResult, text);
+    }
+
     const lines = text.split('\n');
     const tsRegex = /\b(\d{1,2}(?::\d{2}){1,2})\b/;
 
@@ -343,6 +616,72 @@ async function analyzeRemovableSegments(text, tabId = null) {
         if (m) {
             const s = parseSec(m[1]);
             if (s > maxTimestampSec) maxTimestampSec = s;
+        }
+    }
+
+    // For custom provider only: split text into ~3800 character chunks to respect server limits
+    if (provider === 'custom' && text.length > 3800) {
+        const charChunks = splitTextIntoCharChunks(text, 3800);
+        console.log(`Custom Provider: Splitting removable segments into ${charChunks.length} chunks (~3800 chars each)...`);
+        const allTableRows = [];
+        const allIntervals = [];
+
+        for (let i = 0; i < charChunks.length; i++) {
+            console.log(`Custom Removable Chunk ${i + 1}/${charChunks.length}...`);
+            const chunkResult = await callAiForRemovableSegments(charChunks[i], provider, config);
+            if (chunkResult) {
+                const { rows, intervals } = parseRemovableResponse(chunkResult);
+                rows.forEach(r => allTableRows.push(r));
+                intervals.forEach(intv => allIntervals.push(intv));
+            }
+
+            if (tabId && allIntervals.length > 0) {
+                chrome.tabs.sendMessage(tabId, {
+                    action: 'removableProgress',
+                    currentHour: i + 1,
+                    totalHours: charChunks.length,
+                    intervalsCount: allIntervals.length
+                }).catch(() => {});
+            }
+
+            if (i < charChunks.length - 1) {
+                await new Promise(res => setTimeout(res, 2000));
+            }
+        }
+
+        if (allTableRows.length > 0 || allIntervals.length > 0) {
+            if (allTableRows.length === 0) {
+                allIntervals.forEach((intv, idx) => {
+                    const m = intv.match(/\[?\s*(\d{1,2}(?::\d{2}){1,2})\s*\]?\s*(?:-|–|—|to)\s*\[?\s*(\d{1,2}(?::\d{2}){1,2})\s*\]?(?:\s+([A-Za-z0-9_-]+))?(?:\s+(.*))?/);
+                    if (m) {
+                        allTableRows.push(`| ${idx + 1} | ${m[1]} | ${m[2]} | ${m[3] || 'SPONSOR'} | ${m[4] || 'Non-educational segment'} |`);
+                    }
+                });
+            }
+            if (allIntervals.length === 0) {
+                allTableRows.forEach(row => {
+                    const tsMatches = row.match(/\b\d{1,2}(?::\d{2}){1,2}\b/g);
+                    if (tsMatches && tsMatches.length >= 2) {
+                        allIntervals.push(`[${tsMatches[0]}]-[${tsMatches[1]}]`);
+                    }
+                });
+            }
+            const header = "| # | Start    | End      | Category        | Reason                        |\n| - | -------- | -------- | --------------- | ----------------------------- |";
+            let cIndex = 1;
+            const renumbered = allTableRows.map(r => {
+                const parts = r.split('|');
+                if (parts.length >= 6) {
+                    parts[1] = ` ${cIndex++} `;
+                    return parts.join('|');
+                }
+                return r;
+            });
+            const tableStr = `${header}\n${renumbered.join('\n')}`;
+            const intervalsStr = Array.from(new Set(allIntervals)).join('\n');
+            const combinedResult = `${tableStr}\n\n${intervalsStr}`;
+            return ensureInitialIntroSegment(combinedResult, text);
+        } else {
+            return ensureInitialIntroSegment("NO REMOVABLE SEGMENTS FOUND", text);
         }
     }
 
@@ -389,7 +728,23 @@ async function analyzeRemovableSegments(text, tabId = null) {
             }
         }
 
-        if (allTableRows.length > 0) {
+        if (allTableRows.length > 0 || allIntervals.length > 0) {
+            if (allTableRows.length === 0) {
+                allIntervals.forEach((intv, idx) => {
+                    const m = intv.match(/\[?\s*(\d{1,2}(?::\d{2}){1,2})\s*\]?\s*(?:-|–|—|to)\s*\[?\s*(\d{1,2}(?::\d{2}){1,2})\s*\]?(?:\s+([A-Za-z0-9_-]+))?(?:\s+(.*))?/);
+                    if (m) {
+                        allTableRows.push(`| ${idx + 1} | ${m[1]} | ${m[2]} | ${m[3] || 'SPONSOR'} | ${m[4] || 'Non-educational segment'} |`);
+                    }
+                });
+            }
+            if (allIntervals.length === 0) {
+                allTableRows.forEach(row => {
+                    const tsMatches = row.match(/\b\d{1,2}(?::\d{2}){1,2}\b/g);
+                    if (tsMatches && tsMatches.length >= 2) {
+                        allIntervals.push(`[${tsMatches[0]}]-[${tsMatches[1]}]`);
+                    }
+                });
+            }
             const header = "| # | Start    | End      | Category        | Reason                        |\n| - | -------- | -------- | --------------- | ----------------------------- |";
             let cIndex = 1;
             const renumbered = allTableRows.map(r => {
@@ -401,7 +756,7 @@ async function analyzeRemovableSegments(text, tabId = null) {
                 return r;
             });
             const tableStr = `${header}\n${renumbered.join('\n')}`;
-            const intervalsStr = allIntervals.join('\n');
+            const intervalsStr = Array.from(new Set(allIntervals)).join('\n');
             const combinedResult = `${tableStr}\n\n${intervalsStr}`;
             return ensureInitialIntroSegment(combinedResult, text);
         } else {
@@ -430,7 +785,7 @@ function ensureInitialIntroSegment(rawResult, fullText) {
         }
     }
 
-    // If first speech happens at >= 5 seconds (e.g. 12s, 15s), the gap from 0 to speech start is an intro/silence
+    // If first speech happens at >= 5 seconds (e.g. 12s, 15s, 42s), the gap from 0 to speech start is an intro/silence
     if (firstSpeechSec < 5) {
         return rawResult;
     }
@@ -442,7 +797,7 @@ function ensureInitialIntroSegment(rawResult, fullText) {
     // Check if an existing segment already covers from 00:00:00
     let alreadyHasStartCovered = false;
     for (const intv of intervals) {
-        const m = intv.match(/\[\s*(\d{1,2}(?::\d{2}){1,2})\s*\]\s*-\s*\[\s*(\d{1,2}(?::\d{2}){1,2})\s*\]/);
+        const m = intv.match(/\[?\s*(\d{1,2}(?::\d{2}){1,2})\s*\]?\s*(?:-|–|—|to)\s*\[?\s*(\d{1,2}(?::\d{2}){1,2})\s*\]?/);
         if (m) {
             const s = parseSec(m[1]);
             const e = parseSec(m[2]);
@@ -457,13 +812,11 @@ function ensureInitialIntroSegment(rawResult, fullText) {
         return rawResult;
     }
 
-    // If there is an existing segment starting around 0 to firstSpeechSec, extend or insert
-    const introRow = `| 1 | ${startTs} | ${endTs} | INTRO           | Initial intro/silence before speech starts |`;
+    const introRow = `| 1 | ${startTs} | ${endTs} | INTRO           | Initial intro silence before speech begins |`;
     const introInterval = `[${startTs}]-[${endTs}]`;
 
-    // Filter out any segment that was starting at firstSpeechSec if it was classified as INTRO to avoid micro-duplication, or prepend
     const updatedRows = [introRow, ...rows];
-    const updatedIntervals = [introInterval, ...intervals];
+    const uniqueIntervals = Array.from(new Set([introInterval, ...intervals]));
 
     const header = "| # | Start    | End      | Category        | Reason                        |\n| - | -------- | -------- | --------------- | ----------------------------- |";
     let cIndex = 1;
@@ -476,7 +829,17 @@ function ensureInitialIntroSegment(rawResult, fullText) {
         return r;
     });
 
-    return `${header}\n${renumbered.join('\n')}\n\n${updatedIntervals.join('\n')}`;
+    return `${header}\n${renumbered.join('\n')}\n\n${uniqueIntervals.join('\n')}`;
+}
+
+function ensureIntroSegment(text, rawSbResult) {
+    if (typeof text === 'string' && typeof rawSbResult === 'string') {
+        if (text.startsWith('|') || text.includes('REMOVABLE') || text.includes(']-[')) {
+            return ensureInitialIntroSegment(text, rawSbResult);
+        }
+        return ensureInitialIntroSegment(rawSbResult, text);
+    }
+    return ensureInitialIntroSegment(rawSbResult, text);
 }
 
 function parseRemovableResponse(rawText) {
@@ -484,16 +847,38 @@ function parseRemovableResponse(rawText) {
     const lines = rawText.split('\n');
     const rows = [];
     const intervals = [];
-    const intvRegex = /\[\s*(\d{1,2}(?::\d{2}){1,2})\s*\]\s*-\s*\[\s*(\d{1,2}(?::\d{2}){1,2})\s*\]/;
+    const seenIntervals = new Set();
+    const intvRegex = /\[?\s*(\d{1,2}(?::\d{2}){1,2})\s*\]?\s*(?:-|–|—|to)\s*\[?\s*(\d{1,2}(?::\d{2}){1,2})\s*\]?(?:\s+([A-Za-z0-9_-]+))?(?:\s+(.*))?/;
 
     lines.forEach(l => {
         const trimmed = l.trim();
-        if (trimmed.startsWith('|') && !trimmed.toLowerCase().includes('category') && !/^\|?[\s\-:|]+\|?$/.test(trimmed)) {
+        if (!trimmed || /^\|?[\s\-:|]+\|?$/.test(trimmed)) return;
+
+        const tsMatches = trimmed.match(/\b\d{1,2}(?::\d{2}){1,2}\b/g);
+
+        if (trimmed.startsWith('|')) {
+            const cells = trimmed.split('|').map(c => c.trim()).filter(c => c.length > 0);
+            const hasTs = cells.some(c => /\b\d{1,2}(?::\d{2}){1,2}\b/.test(c));
+            if (!hasTs) return; // Header row
+
             rows.push(trimmed);
+            if (tsMatches && tsMatches.length >= 2) {
+                const intvKey = `[${tsMatches[0]}]-[${tsMatches[1]}]`;
+                if (!seenIntervals.has(intvKey)) {
+                    seenIntervals.add(intvKey);
+                    intervals.push(intvKey);
+                }
+            }
         } else {
             const m = trimmed.match(intvRegex);
             if (m) {
-                intervals.push(`[${m[1]}]-[${m[2]}]`);
+                const intvKey = `[${m[1]}]-[${m[2]}]`;
+                if (!seenIntervals.has(intvKey)) {
+                    seenIntervals.add(intvKey);
+                    const catStr = m[3] ? ` ${m[3]}` : '';
+                    const reasonStr = m[4] ? ` ${m[4]}` : '';
+                    intervals.push(`${intvKey}${catStr}${reasonStr}`.trim());
+                }
             }
         }
     });
@@ -570,11 +955,14 @@ Do NOT invent new category names. Every row in your table MUST strictly use one 
 ---
 
 # TIMESTAMP RULES
-
 Every output segment MUST contain:
 START and END timestamps.
-Use the timestamps provided in the transcript.
-Format: [HH:MM:SS]-[HH:MM:SS] (or [00:MM:SS] if MM:SS).
+Use the EXACT timestamps from the transcript.
+Format: [HH:MM:SS]-[HH:MM:SS] (or [00:MM:SS] if under 1 hour).
+*CRITICAL FORMAT REQUIREMENT*: 
+- Timestamps must NEVER have duplicated units (e.g. NEVER write [00:34:34] for 34 seconds; write [00:00:34]. NEVER write [07:09:09] for 7m 9s; write [00:07:09]).
+- Standard format is ALWAYS [HH:MM:SS], where HH is hours, MM is minutes (00-59), and SS is seconds (00-59).
+- For a 34-second mark, write [00:00:34]. For 7 minutes 9 seconds, write [00:07:09]. For 33 minutes 26 seconds, write [00:33:26].
 
 ---
 
@@ -613,6 +1001,295 @@ ${textChunk}`;
     return await callRawAi(prompt, provider, config);
 }
 
+// --- ALL-IN-ONE DUAL EXTRACTION (CHAPTERS + SPONSORBLOCK IN SINGLE QUERY) ---
+async function generateAllInOne(text, tabId = null) {
+    console.log("Generating All-in-One extraction for text length:", text.length);
+    const config = await getAiConfig();
+    let provider = config.aiProvider || 'aikit';
+
+    if (provider === 'openrouter' && !config.openrouterKey) {
+        provider = 'aikit';
+    }
+
+    const lines = text.split('\n');
+    const tsRegex = /\b(\d{1,2}(?::\d{2}){1,2})\b/;
+
+    let maxTimestampSec = 0;
+    for (const line of lines) {
+        const m = line.match(tsRegex);
+        if (m) {
+            const s = parseSec(m[1]);
+            if (s > maxTimestampSec) maxTimestampSec = s;
+        }
+    }
+
+    const allChapterRows = [];
+    const allSponsorRows = [];
+    const allSponsorIntervals = [];
+
+    const noChunking = isNoChunkingModel(config.customModel, config);
+
+    if (noChunking) {
+        console.log(`GLM 5.3 / Full-Context Model detected: Sending complete transcript for Dual Scan (${text.length} chars)...`);
+        const singleResult = await callAiForDualExtraction(text, provider, config);
+        if (singleResult) {
+            const parsed = parseDualResponse(singleResult);
+            parsed.chapterRows.forEach(r => allChapterRows.push(r));
+            parsed.sponsorRows.forEach(r => allSponsorRows.push(r));
+            parsed.sponsorIntervals.forEach(intv => allSponsorIntervals.push(intv));
+        }
+    } else if (provider === 'custom' && text.length > 3800) {
+        const charChunks = splitTextIntoCharChunks(text, 3800);
+        console.log(`Custom Provider: Splitting All-in-One into ${charChunks.length} chunks (~3800 chars each)...`);
+        for (let i = 0; i < charChunks.length; i++) {
+            console.log(`Custom All-in-One Chunk ${i + 1}/${charChunks.length}...`);
+            const chunkResult = await callAiForDualExtraction(charChunks[i], provider, config);
+            if (chunkResult) {
+                const parsed = parseDualResponse(chunkResult);
+                parsed.chapterRows.forEach(r => allChapterRows.push(r));
+                parsed.sponsorRows.forEach(r => allSponsorRows.push(r));
+                parsed.sponsorIntervals.forEach(intv => allSponsorIntervals.push(intv));
+            }
+
+            if (tabId) {
+                chrome.tabs.sendMessage(tabId, {
+                    action: 'dualProgress',
+                    currentChunk: i + 1,
+                    totalChunks: charChunks.length,
+                    chaptersCount: allChapterRows.length,
+                    sponsorCount: allSponsorIntervals.length
+                }).catch(() => {});
+            }
+
+            if (i < charChunks.length - 1) {
+                await new Promise(res => setTimeout(res, 2000));
+            }
+        }
+    } else if (maxTimestampSec > CHUNK_DURATION + 180) {
+        const totalChunks = Math.ceil(maxTimestampSec / CHUNK_DURATION);
+        console.log(`All-in-One: Video duration (~${(maxTimestampSec / 60).toFixed(0)} mins). Splitting into ${totalChunks} chunks...`);
+
+        const timeChunks = Array.from({ length: totalChunks }, () => []);
+        let currentBucket = 0;
+        for (const line of lines) {
+            const m = line.match(tsRegex);
+            if (m) {
+                const s = parseSec(m[1]);
+                currentBucket = Math.min(totalChunks - 1, Math.floor(s / CHUNK_DURATION));
+            }
+            timeChunks[currentBucket].push(line);
+        }
+
+        const validChunks = timeChunks.map(c => c.join('\n')).filter(c => c.trim().length > 0);
+
+        for (let i = 0; i < validChunks.length; i++) {
+            console.log(`All-in-One Chunk ${i + 1}/${validChunks.length}...`);
+            const chunkResult = await callAiForDualExtraction(validChunks[i], provider, config);
+            if (chunkResult) {
+                const parsed = parseDualResponse(chunkResult);
+                parsed.chapterRows.forEach(r => allChapterRows.push(r));
+                parsed.sponsorRows.forEach(r => allSponsorRows.push(r));
+                parsed.sponsorIntervals.forEach(intv => allSponsorIntervals.push(intv));
+            }
+
+            if (tabId) {
+                chrome.tabs.sendMessage(tabId, {
+                    action: 'dualProgress',
+                    currentChunk: i + 1,
+                    totalChunks: validChunks.length,
+                    chaptersCount: allChapterRows.length,
+                    sponsorCount: allSponsorIntervals.length
+                }).catch(() => {});
+            }
+
+            if (i < validChunks.length - 1) {
+                await new Promise(res => setTimeout(res, 5000));
+            }
+        }
+    } else {
+        const singleResult = await callAiForDualExtraction(text, provider, config);
+        if (singleResult) {
+            const parsed = parseDualResponse(singleResult);
+            parsed.chapterRows.forEach(r => allChapterRows.push(r));
+            parsed.sponsorRows.forEach(r => allSponsorRows.push(r));
+            parsed.sponsorIntervals.forEach(intv => allSponsorIntervals.push(intv));
+        }
+    }
+
+    // 1. Format Chapters table with sequential Q1, Q2, ...
+    const chapterHeader = "| Q# | Question Start | Correct Option Timestamp | Answer Start | Correct Option |\n| -- | -------------- | ------------------------ | ------------ | -------------- |";
+    let qCounter = 1;
+    const renumberedChapterRows = allChapterRows.map(row => {
+        const parts = row.split('|');
+        if (parts.length >= 6) {
+            parts[1] = ` Q${qCounter++} `;
+            return parts.join('|');
+        }
+        return row;
+    });
+    const finalChaptersText = renumberedChapterRows.length > 0 ? `${chapterHeader}\n${renumberedChapterRows.join('\n')}` : '';
+
+    // 2. Format SponsorBlock table & intervals with safety checks
+    let rawSbResult = '';
+    if (allSponsorRows.length > 0 || allSponsorIntervals.length > 0) {
+        if (allSponsorRows.length === 0) {
+            allSponsorIntervals.forEach((intv, idx) => {
+                const m = intv.match(/\[?\s*(\d{1,2}(?::\d{2}){1,2})\s*\]?\s*(?:-|–|—|to)\s*\[?\s*(\d{1,2}(?::\d{2}){1,2})\s*\]?(?:\s+([A-Za-z0-9_-]+))?(?:\s+(.*))?/);
+                if (m) {
+                    allSponsorRows.push(`| ${idx + 1} | ${m[1]} | ${m[2]} | ${m[3] || 'SPONSOR'} | ${m[4] || 'Non-educational segment'} |`);
+                }
+            });
+        }
+        if (allSponsorIntervals.length === 0) {
+            allSponsorRows.forEach(row => {
+                const tsMatches = row.match(/\b\d{1,2}(?::\d{2}){1,2}\b/g);
+                if (tsMatches && tsMatches.length >= 2) {
+                    allSponsorIntervals.push(`[${tsMatches[0]}]-[${tsMatches[1]}]`);
+                }
+            });
+        }
+        const sbHeader = "| # | Start    | End      | Category        | Reason                        |\n| - | -------- | -------- | --------------- | ----------------------------- |";
+        rawSbResult = `${sbHeader}\n${allSponsorRows.join('\n')}\n\n${Array.from(new Set(allSponsorIntervals)).join('\n')}`;
+    } else {
+        rawSbResult = 'NO REMOVABLE SEGMENTS FOUND';
+    }
+    const finalSbText = ensureInitialIntroSegment(rawSbResult, text);
+
+    return {
+        chapters: finalChaptersText,
+        sponsorBlock: finalSbText,
+        questionsCount: renumberedChapterRows.length,
+        sponsorCount: Array.from(new Set(allSponsorIntervals)).length
+    };
+}
+
+function parseDualResponse(rawText) {
+    if (!rawText) return { chapterRows: [], sponsorRows: [], sponsorIntervals: [] };
+
+    let chaptersSection = '';
+    let sponsorSection = '';
+
+    const sbHeaderRegex = /(?:={2,}|#{1,4}|\*{2,})?\s*SECTION(?:\s*\d+)?\s*:\s*(?:REMOVABLE\s*(?:\/|\s)\s*)?SPONSORBLOCK[^\n]*|#{1,4}\s*(?:REMOVABLE(?:\s*SEGMENTS)?|SPONSORBLOCK[^\n]*)/i;
+    const chHeaderRegex = /(?:={2,}|#{1,4}|\*{2,})?\s*SECTION(?:\s*\d+)?\s*:\s*(?:QUESTION\s+)?CHAPTERS[^\n]*|#{1,4}\s*(?:QUESTION\s+)?CHAPTERS[^\n]*/i;
+
+    const sbPos = rawText.search(sbHeaderRegex);
+    const chPos = rawText.search(chHeaderRegex);
+
+    if (chPos !== -1 && sbPos !== -1) {
+        if (chPos < sbPos) {
+            chaptersSection = rawText.substring(chPos, sbPos);
+            sponsorSection = rawText.substring(sbPos);
+        } else {
+            sponsorSection = rawText.substring(sbPos, chPos);
+            chaptersSection = rawText.substring(chPos);
+        }
+    } else if (chPos !== -1) {
+        chaptersSection = rawText.substring(chPos);
+    } else if (sbPos !== -1) {
+        sponsorSection = rawText.substring(sbPos);
+    } else {
+        chaptersSection = rawText;
+        sponsorSection = rawText;
+    }
+
+    // Parse Chapter Rows
+    const chapterRows = [];
+    chaptersSection.split('\n').forEach(l => {
+        const trimmed = l.trim();
+        if (trimmed.startsWith('|') && !trimmed.toLowerCase().includes('question start') && !trimmed.toLowerCase().includes('category') && !/^\|?[\s\-:|]+\|?$/.test(trimmed)) {
+            const isSponsor = /(SPONSOR|SELFPROMO|INTERACTION|INTRO|OUTRO|PREVIEW|FILLER)/i.test(trimmed);
+            if (!isSponsor) {
+                chapterRows.push(trimmed);
+            }
+        }
+    });
+
+    // Parse Sponsor Rows & Intervals
+    const { rows: sponsorRows, intervals: sponsorIntervals } = parseRemovableResponse(sponsorSection);
+
+    // Filter out chapter rows that might have leaked into sponsorRows
+    const filteredSponsorRows = sponsorRows.filter(r => {
+        const lower = r.toLowerCase();
+        if (lower.includes('question start') || lower.includes('correct option')) return false;
+        if (/\|\s*Q\d+\s*\|/i.test(r)) return false;
+        return true;
+    });
+
+    return { chapterRows, sponsorRows: filteredSponsorRows, sponsorIntervals };
+}
+
+async function callAiForDualExtraction(textChunk, provider, config) {
+    const prompt = `You are an expert educational video analyst and dual-extraction specialist.
+Your task is to analyze the lecture transcript and produce TWO DISTINCT STRUCTURED SECTIONS in a single response:
+
+1. SECTION 1: QUESTION CHAPTERS (Accurate exam question timestamps for video navigation)
+2. SECTION 2: REMOVABLE / SPONSORBLOCK SEGMENTS (Promos, banter, tangents, or intro to filter out)
+
+----------------------------------------------------
+### RULES FOR SECTION 1: QUESTION CHAPTERS
+----------------------------------------------------
+Treat each exam question as a single "Question Event" (Transition -> Question Presentation -> Options -> Solution).
+- Assign the timestamp where the teacher ACTUALLY BEGINS PRESENTING/INTRODUCING the exam question.
+- "Next question" signals: "अगला सवाल", "नेक्स्ट", "Question number [X]", "चलिए अगला प्रश्न".
+- Look-ahead: If transition is at [02:00] and question reading begins at [02:05], Question Start is [02:05].
+- Look-back: If topic context begins at [17:57] before question text at [18:04], Question Start is [17:57].
+- Do NOT split rhetorical / follow-up / explanation questions. Maintain question continuity.
+- Correct Option Timestamp: Exact second teacher reveals/confirms the answer (e.g. "Option B lock kar do").
+- Answer Start: Exact second teacher begins explaining the reasoning.
+Format:
+| Q# | Question Start | Correct Option Timestamp | Answer Start | Correct Option |
+| -- | -------------- | ------------------------ | ------------ | -------------- |
+| Q1 | HH:MM:SS       | HH:MM:SS                 | HH:MM:SS     | B              |
+
+----------------------------------------------------
+### RULES FOR SECTION 2: REMOVABLE / SPONSORBLOCK SEGMENTS
+----------------------------------------------------
+Identify non-educational portions that should be skipped.
+You MUST classify each segment into EXACTLY ONE of the official SponsorBlock categories:
+- SPONSOR: Paid promotions, commercial spots, brand ads, paid course deals.
+- SELFPROMO: Unpaid self-promotion, promoting the teacher's own mobile app (e.g. Maths Mahindra App), books, test series, batch launches, or WhatsApp group.
+- INTERACTION: Reminders to like the video, subscribe to the channel, press the bell icon, or follow social media.
+- INTRO: Opening greetings, intro sequence, title cards, silence/waiting before lecture starts.
+- OUTRO: Endcards, class schedule announcements, closing remarks, final sign-off greetings.
+- PREVIEW: Lecture preview, recap, syllabus logistics discussion.
+- FILLER: Tangents, casual jokes, banter, teasing students, off-topic personal stories (>15s).
+- HOOK: Opening video teaser or hook.
+NEVER cut educational definitions, formulas, or question explanations!
+Timestamp Format: Strict [HH:MM:SS] or MM:SS (Never duplicate digits like [00:34:34] for 34s; write [00:00:34]).
+Format:
+| # | Start    | End      | Category        | Reason                        |
+| - | -------- | -------- | --------------- | ----------------------------- |
+| 1 | HH:MM:SS | HH:MM:SS | SPONSOR         | Promo description             |
+
+Followed by the raw intervals, one per line:
+[HH:MM:SS]-[HH:MM:SS]
+
+If no removable segments exist in this chunk, write:
+NO REMOVABLE SEGMENTS FOUND
+
+----------------------------------------------------
+### OUTPUT FORMAT (MANDATORY DELIMITERS)
+----------------------------------------------------
+You MUST separate the two sections using the exact delimiters shown below:
+
+=== SECTION: CHAPTERS ===
+| Q# | Question Start | Correct Option Timestamp | Answer Start | Correct Option |
+| -- | -------------- | ------------------------ | ------------ | -------------- |
+| Q1 | HH:MM:SS       | HH:MM:SS                 | HH:MM:SS     | B              |
+
+=== SECTION: SPONSORBLOCK ===
+| # | Start    | End      | Category        | Reason                        |
+| - | -------- | -------- | --------------- | ----------------------------- |
+| 1 | HH:MM:SS | HH:MM:SS | SPONSOR         | Product pitch                 |
+
+[HH:MM:SS]-[HH:MM:SS]
+
+Transcript to analyze:
+${textChunk}`;
+
+    return await callRawAi(prompt, provider, config);
+}
+
 // --- SPONSORBLOCK DIRECT API SUBMITTER ---
 async function submitSponsorBlock({ videoId, userId, segments, videoDuration }) {
     if (!videoId || !/^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
@@ -639,6 +1316,22 @@ async function submitSponsorBlock({ videoId, userId, segments, videoDuration }) 
 
     if (typeof videoDuration === 'number' && videoDuration > 0) {
         payload.videoDuration = videoDuration;
+        
+        // Safety: Validate segments don't exceed video duration
+        let totalSegmentDuration = 0;
+        segments.forEach(s => {
+            const segStart = Math.min(s.segment[0], videoDuration);
+            const segEnd = Math.min(s.segment[1], videoDuration);
+            if (segEnd > segStart) {
+                totalSegmentDuration += (segEnd - segStart);
+            }
+        });
+
+        // SponsorBlock strictly rejects if total segments length >= 80% of video
+        if (totalSegmentDuration >= videoDuration * 0.8) {
+            const pct = Math.round((totalSegmentDuration / videoDuration) * 100);
+            throw new Error(`Safety Block: Total removable segments (${Math.round(totalSegmentDuration)}s) equal ${pct}% of video (${videoDuration}s). SponsorBlock allows at most 80%. Please review and refine intervals.`);
+        }
     }
 
     console.log("Submitting to SponsorBlock API:", JSON.stringify(payload));
@@ -667,6 +1360,100 @@ async function submitSponsorBlock({ videoId, userId, segments, videoDuration }) 
     }
 }
 
+// --- TRANSCRIPTAPI.COM FALLBACK FETCHER ---
+async function fetchTranscriptFromApi({ videoId, apiKey }) {
+    if (!videoId) throw new Error('Missing video ID');
+
+    // Robust ID sanitization
+    let cleanId = videoId.trim();
+    if (cleanId.includes('v=')) {
+        const m = cleanId.match(/v=([a-zA-Z0-9_-]{11})/);
+        if (m) cleanId = m[1];
+    } else if (cleanId.includes('/shorts/')) {
+        const m = cleanId.match(/\/shorts\/([a-zA-Z0-9_-]{11})/);
+        if (m) cleanId = m[1];
+    } else if (cleanId.includes('youtu.be/')) {
+        const m = cleanId.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
+        if (m) cleanId = m[1];
+    } else if (cleanId.length > 11 && !cleanId.startsWith('http')) {
+        cleanId = cleanId.slice(0, 11);
+    }
+
+    const key = (apiKey && apiKey.trim()) ? apiKey.trim() : DEFAULT_TRANSCRIPT_API_KEY;
+    const url = `https://transcriptapi.com/api/v2/youtube/transcript?video_url=${encodeURIComponent(cleanId)}`;
+
+    console.log(`[TranscriptAPI] Fetching transcript fallback for video: ${cleanId}...`);
+    let resp = await fetch(url, {
+        headers: {
+            'Authorization': `Bearer ${key}`
+        }
+    });
+
+    // If 408 (retry) or 503, retry once after 1.5 seconds
+    if (resp.status === 408 || resp.status === 503) {
+        console.warn(`[TranscriptAPI] Status ${resp.status}, retrying in 1.5s...`);
+        await new Promise(r => setTimeout(r, 1500));
+        resp = await fetch(url, {
+            headers: {
+                'Authorization': `Bearer ${key}`
+            }
+        });
+    }
+
+    let data;
+    if (!resp.ok) {
+        const errText = await resp.text().catch(() => '');
+        try {
+            const errJson = JSON.parse(errText);
+            // If requested language not found but other languages are available:
+            if (errJson && Array.isArray(errJson.available_languages) && errJson.available_languages.length > 0) {
+                const targetLang = errJson.available_languages[0].code;
+                console.log(`[TranscriptAPI] Retrying with available language: ${targetLang}`);
+                const retryUrl = `https://transcriptapi.com/api/v2/youtube/transcript?video_url=${encodeURIComponent(cleanId)}&language=${encodeURIComponent(targetLang)}`;
+                const retryResp = await fetch(retryUrl, {
+                    headers: { 'Authorization': `Bearer ${key}` }
+                });
+                if (retryResp.ok) {
+                    data = await retryResp.json();
+                }
+            }
+        } catch (e) {
+            // Not JSON
+        }
+
+        if (!data) {
+            throw new Error(`TranscriptAPI error (${resp.status}): ${errText || resp.statusText}`);
+        }
+    } else {
+        data = await resp.json();
+    }
+
+    if (!data || !Array.isArray(data.transcript) || data.transcript.length === 0) {
+        throw new Error('TranscriptAPI returned empty transcript.');
+    }
+
+    // Convert segments to formatted "MM:SS Text" or "HH:MM:SS Text"
+    const lines = [];
+    data.transcript.forEach(seg => {
+        if (!seg || typeof seg.start === 'undefined') return;
+        const totalSec = Math.floor(Number(seg.start) || 0);
+        const h = Math.floor(totalSec / 3600);
+        const m = Math.floor((totalSec % 3600) / 60);
+        const s = Math.floor(totalSec % 60);
+        const timeStr = `${h ? h + ':' : ''}${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        const textStr = (seg.text || '').replace(/\s+/g, ' ').trim();
+        if (textStr) {
+            lines.push(`${timeStr} ${textStr}`);
+        }
+    });
+
+    if (lines.length === 0) {
+        throw new Error('TranscriptAPI had no readable text segments.');
+    }
+
+    return lines.join('\n');
+}
+
 async function callRawAi(prompt, provider, config) {
     if (provider === 'aikit') {
         const token = (config.aiToken && config.aiToken.trim()) ? config.aiToken.trim() : DEFAULT_AIKIT_TOKEN;
@@ -674,7 +1461,7 @@ async function callRawAi(prompt, provider, config) {
         if (!model.startsWith('qwen')) {
             model = DEFAULT_AIKIT_MODEL;
         }
-        const baseUrl = (config.aiBaseUrl && config.aiBaseUrl.trim()) ? config.aiBaseUrl.trim().replace(/\/+$/, '') : DEFAULT_AIKIT_URL;
+        let baseUrl = (config.aiBaseUrl && config.aiBaseUrl.trim()) ? config.aiBaseUrl.trim().replace(/\/+$/, '') : DEFAULT_AIKIT_URL;
         const endpoint = baseUrl.endsWith('/messages') ? baseUrl : `${baseUrl}/messages`;
 
         const resp = await fetch(endpoint, {
@@ -700,6 +1487,58 @@ async function callRawAi(prompt, provider, config) {
         const rawContent = data.content?.[0]?.text || '';
         const cleaned = rawContent.replace(/<!--\s*qwen_metadata:.*?-->/gs, '').trim();
         return cleaned;
+
+    } else if (provider === 'custom') {
+        // Custom OpenAI-Compatible Provider (Local e.g. 127.0.0.1:8002/v1 or Remote)
+        let baseUrl = (config.customUrl && config.customUrl.trim()) ? config.customUrl.trim() : 'http://127.0.0.1:8002/v1';
+        baseUrl = baseUrl.replace(/\/+$/, '');
+        const model = (config.customModel && config.customModel.trim()) ? config.customModel.trim() : 'qwen3.8-flash';
+        const apiKey = (config.customApiKey && config.customApiKey.trim()) ? config.customApiKey.trim() : '';
+
+        const endpoint = baseUrl.endsWith('/chat/completions') ? baseUrl : `${baseUrl}/chat/completions`;
+        console.log("Using Custom AI endpoint:", endpoint, "Model:", model);
+
+        const headers = { 'Content-Type': 'application/json' };
+        if (apiKey) {
+            headers['Authorization'] = `Bearer ${apiKey}`;
+        }
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minutes for full 128k context requests
+
+        try {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify({
+                    model: model,
+                    messages: [{ role: 'user', content: prompt }],
+                    temperature: 0.3,
+                    max_tokens: 16384
+                }),
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(`Custom Provider Error (${response.status}): ${errorData.error?.message || errorData.message || response.statusText}`);
+            }
+
+            const data = await response.json();
+            let content = data.choices?.[0]?.message?.content || '';
+            if (!content && data.choices?.[0]?.message?.reasoning_content) {
+                content = data.choices[0].message.reasoning_content;
+            }
+            content = cleanAiOutput(content);
+            return content;
+        } catch (fetchErr) {
+            clearTimeout(timeoutId);
+            if (fetchErr.name === 'AbortError') {
+                throw new Error(`Custom Provider request timed out (300s). Endpoint: ${endpoint}`);
+            }
+            throw fetchErr;
+        }
 
     } else {
         // OpenRouter Provider
@@ -733,12 +1572,24 @@ async function callRawAi(prompt, provider, config) {
         }
 
         const data = await response.json();
-        return data.choices?.[0]?.message?.content || '';
+        let content = data.choices?.[0]?.message?.content || '';
+        if (!content && data.choices?.[0]?.message?.reasoning_content) {
+            content = data.choices[0].message.reasoning_content;
+        }
+        return cleanAiOutput(content);
     }
 }
 
-chrome.action.onClicked.addListener((tab) => {
-    chrome.tabs.sendMessage(tab.id, { action: 'toggleDashboard' }).catch(err => {
-        console.warn("Could not toggle dashboard. Ensure you are on YouTube.", err);
+const actionApi = (typeof browser !== 'undefined' && browser.action) || 
+                  (typeof chrome !== 'undefined' && chrome.action) || 
+                  (typeof browser !== 'undefined' && browser.browserAction) || 
+                  (typeof chrome !== 'undefined' && chrome.browserAction);
+
+if (actionApi && actionApi.onClicked) {
+    actionApi.onClicked.addListener((tab) => {
+        const runtimeApi = (typeof browser !== 'undefined' && browser.tabs) ? browser.tabs : chrome.tabs;
+        runtimeApi.sendMessage(tab.id, { action: 'toggleDashboard' }).catch(err => {
+            console.warn("Could not toggle dashboard. Ensure you are on YouTube.", err);
+        });
     });
-});
+}
