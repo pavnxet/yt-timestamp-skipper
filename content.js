@@ -160,101 +160,113 @@ function createDashboard() {
     dashboard = document.createElement('div');
     dashboard.id = 'yt-skipper-dashboard';
     dashboard.innerHTML = `
-        <div class="yt-sk-header" id="yt-sk-header" title="Double click to Minimize / Expand">
-            <div class="yt-sk-header-left">
-                <h2>Skipper Pro</h2>
-                <div class="yt-sk-status" id="yt-sk-status">Active</div>
+        <div class="yt-sk-header" id="yt-sk-header" title="Double-click to minimize or expand">
+            <div class="yt-sk-header-top">
+                <div class="yt-sk-header-left">
+                    <h2>YT Smart Chapters</h2>
+                    <div class="yt-sk-status" id="yt-sk-status">Ready</div>
+                </div>
+                <div class="yt-sk-header-actions">
+                    <div class="yt-sk-icon-btn" id="yt-sk-btn-min" title="Minimize / Restore">—</div>
+                    <div class="yt-sk-icon-btn yt-sk-close-btn" id="yt-sk-btn-close" title="Close">✕</div>
+                </div>
             </div>
             <div class="yt-sk-header-center">
-                <button class="yt-sk-btn yt-sk-header-dual-btn" id="yt-sk-btn-header-dual-scan" title="1-Click Dual AI Scan: Generates Question Chapters & Detects SponsorBlock Segments">⚡ Dual Scan</button>
-            </div>
-            <div class="yt-sk-header-actions">
-                <div class="yt-sk-icon-btn" id="yt-sk-btn-min" title="Minimize / Restore">—</div>
-                <div class="yt-sk-icon-btn yt-sk-close-btn" id="yt-sk-btn-close" title="Close">✕</div>
+                <button class="yt-sk-header-dual-btn" id="yt-sk-btn-header-dual-scan" title="One click: reads the transcript, writes chapter timestamps and finds ad segments">⚡ Generate everything</button>
             </div>
         </div>
 
         <div class="yt-sk-tabs">
             <button class="yt-sk-tab-btn active" data-tab="chapters">📌 Chapters</button>
             <button class="yt-sk-tab-btn" data-tab="editor">📝 Editor</button>
-            <button class="yt-sk-tab-btn" data-tab="sponsorblock">🚫 SponsorBlock</button>
+            <button class="yt-sk-tab-btn" data-tab="sponsorblock">🚫 Ads &amp; Sponsors</button>
             <button class="yt-sk-tab-btn" data-tab="settings">⚙️ Settings</button>
         </div>
 
         <!-- TAB 1: CHAPTERS -->
         <div class="yt-sk-tab-content active" id="yt-sk-tab-chapters">
             <div class="yt-sk-top-bar">
-                <select id="yt-sk-mode" class="yt-sk-mode-select">
-                    <option value="normal">Mode: Normal Navigation</option>
-                    <option value="loop">Mode: Loop Current Chapter</option>
+                <select id="yt-sk-mode" class="yt-sk-mode-select" title="Normal jumps between chapters. Loop repeats the chapter you are watching.">
+                    <option value="normal">Playback: Normal navigation</option>
+                    <option value="loop">Playback: Loop the current chapter</option>
                 </select>
             </div>
 
-            <!-- Chapter Category Filter Chips -->
             <div class="yt-sk-filter-chips" id="yt-sk-filter-chips">
-                <button class="yt-sk-chip active" data-filter="all" title="Show all extracted timestamps">All</button>
-                <button class="yt-sk-chip" data-filter="ques" title="Show only Question Start timestamps">❓ Ques</button>
-                <button class="yt-sk-chip" data-filter="ans" title="Show only Correct Option timestamps">🎯 Option</button>
-                <button class="yt-sk-chip" data-filter="explain" title="Show only Answer Explanation timestamps">💡 Explain</button>
+                <button class="yt-sk-chip active" data-filter="all" title="Show every timestamp">All</button>
+                <button class="yt-sk-chip" data-filter="ques" title="Show only where each question starts">❓ Questions</button>
+                <button class="yt-sk-chip" data-filter="ans" title="Show only where the correct option is revealed">🎯 Answers</button>
+                <button class="yt-sk-chip" data-filter="explain" title="Show only where the explanation starts">💡 Explain</button>
             </div>
 
             <div class="yt-sk-list" id="yt-sk-list">
                 <div class="yt-sk-empty-placeholder">
-                    No chapters loaded yet.<br>Click <b>⚡ Dual Scan</b> above or use the <b>📝 Editor</b>.
+                    <div class="yt-sk-empty-icon">📌</div>
+                    <div class="yt-sk-empty-title">No chapters yet</div>
+                    <div class="yt-sk-empty-desc">Click <b>⚡ Generate everything</b> at the top, or paste timestamps in the <b>📝 Editor</b> tab.</div>
                 </div>
             </div>
-            <div class="yt-sk-btn-row">
-                <button class="yt-sk-btn yt-sk-btn-success" id="yt-sk-btn-save" title="Save to Turso DB">☁️ Save to DB</button>
-                <button class="yt-sk-btn" id="yt-sk-btn-load" title="Load from Turso DB">🔄 Load DB</button>
-                <button class="yt-sk-btn" id="yt-sk-btn-copy-chapters" title="Copy chapters markdown">📋 Copy</button>
+
+            <div class="yt-sk-btn-row yt-sk-bottom-actions">
+                <button class="yt-sk-btn yt-sk-btn-success" id="yt-sk-btn-save" title="Save these chapters to your Turso cloud database">☁️ Save</button>
+                <button class="yt-sk-btn yt-sk-btn-db-load" id="yt-sk-btn-load" title="Load saved chapters from your database">🔄 Load</button>
+                <button class="yt-sk-btn yt-sk-btn-copy" id="yt-sk-btn-copy-chapters" title="Copy the chapters as text">📋 Copy</button>
             </div>
         </div>
 
-        <!-- TAB 2: EDITOR (For Question / MCQs / Lecture Notes) -->
+        <!-- TAB 2: EDITOR -->
         <div class="yt-sk-tab-content" id="yt-sk-tab-editor">
+            <div class="yt-sk-section-title">Your timestamp list</div>
+            <div class="yt-sk-section-sub">This list is the single source of truth — it drives the chapter list and the marks on the video timeline.</div>
+
             <div class="yt-sk-editor-toolbar">
-                <button class="yt-sk-btn" id="yt-sk-btn-fetch-transcript" title="Auto-fetch video transcript with timestamps">📜 Fetch Transcript</button>
-                <button class="yt-sk-btn yt-sk-btn-primary" id="yt-sk-btn-ai" title="AI Generate Question & Chapter Names">✨ AI Generate Titles</button>
-                <button class="yt-sk-btn" id="yt-sk-btn-clean" title="Sort & format timestamps">🧹 Clean</button>
-                <button class="yt-sk-btn" id="yt-sk-btn-copy" title="Copy raw editor text">📋 Copy</button>
+                <button class="yt-sk-btn" id="yt-sk-btn-fetch-transcript" title="Pull this video's transcript, with timestamps, straight from YouTube">📜 Get transcript</button>
+                <button class="yt-sk-btn yt-sk-action-btn-primary" id="yt-sk-btn-ai" title="Send the transcript to your AI provider and get chapter names back">✨ Write chapters</button>
             </div>
+            <div class="yt-sk-editor-toolbar">
+                <button class="yt-sk-btn" id="yt-sk-btn-clean" title="Sort the lines and remove duplicates">🧹 Clean up</button>
+                <button class="yt-sk-btn" id="yt-sk-btn-copy" title="Copy the raw editor text">📋 Copy</button>
+            </div>
+
             <div class="yt-sk-textarea-container">
                 <div id="yt-sk-textarea-highlights" class="yt-sk-textarea-layer"></div>
-                <textarea id="yt-sk-textarea" class="yt-sk-textarea-layer" spellcheck="false" placeholder="Enter timestamps e.g.&#10;01:23 Introduction&#10;04:56 Topic Discussion&#10;08:12 Q1: Question title"></textarea>
+                <textarea id="yt-sk-textarea" class="yt-sk-textarea-layer" spellcheck="false" placeholder="One timestamp per line, for example:&#10;01:23 Introduction&#10;04:56 Topic discussion&#10;08:12 Q1: Question title"></textarea>
             </div>
             <div class="yt-sk-editor-hint">
-                Format: <code>MM:SS Title</code> or <code>HH:MM:SS Title</code> • Syncs live with Chapters
+                Format: <code>MM:SS Title</code> or <code>HH:MM:SS Title</code> — every change syncs to the Chapters tab instantly.
             </div>
         </div>
 
-        <!-- TAB 3: SPONSORBLOCK (Dedicated Non-Educational & Sponsor Segments) -->
+        <!-- TAB 3: ADS & SPONSORS -->
         <div class="yt-sk-tab-content" id="yt-sk-tab-sponsorblock">
-            <!-- Action Bar -->
+            <div class="yt-sk-section-title">Find the parts worth skipping</div>
+            <div class="yt-sk-section-sub">Scans the transcript for sponsor reads, self-promotion, intros, outros and filler, then can upload them to SponsorBlock for everyone.</div>
+
             <div class="yt-sk-sb-actions-bar">
-                <button class="yt-sk-btn yt-sk-btn-primary" id="yt-sk-btn-scan-removable" title="Scan transcript for sponsors, tangents, and jokes">🤖 AI Scan Segments</button>
-                <button class="yt-sk-btn" id="yt-sk-sb-btn-toggle-paste" title="Paste table or intervals text">📋 Quick Paste</button>
-                <button class="yt-sk-btn" id="yt-sk-sb-btn-toggle-manual" title="Add interval manually (Alt+S)">➕ Add Manual</button>
+                <button class="yt-sk-btn yt-sk-action-btn-primary" id="yt-sk-btn-scan-removable" title="Let the AI read the transcript and mark the removable segments">🤖 Scan with AI</button>
+                <button class="yt-sk-btn" id="yt-sk-sb-btn-toggle-paste" title="Paste a segment table or [MM:SS]-[MM:SS] intervals you already have">📋 Quick paste</button>
+                <button class="yt-sk-btn" id="yt-sk-sb-btn-toggle-manual" title="Add one segment by hand (hotkey Alt+S)">➕ Add manually</button>
             </div>
 
-            <!-- Collapsible Quick Paste Drawer -->
+            <!-- Quick Paste drawer -->
             <div class="yt-sk-sb-drawer" id="yt-sk-sb-paste-drawer" style="display:none;">
                 <div class="yt-sk-sb-drawer-header">
-                    <span>📋 Quick Paste (Markdown Table or Intervals)</span>
+                    <span>📋 Quick paste</span>
                     <button class="yt-sk-drawer-close" id="yt-sk-sb-btn-close-paste" title="Close">✕</button>
                 </div>
                 <textarea id="yt-sk-sb-quick-paste-input" class="yt-sk-turso-input yt-sk-drawer-textarea" placeholder="| 1 | 00:00 | 00:10 | INTRO | Greeting |&#10;or [04:14]-[04:31] SELFPROMO"></textarea>
                 <div class="yt-sk-btn-row">
-                    <button class="yt-sk-btn yt-sk-btn-primary" id="yt-sk-sb-btn-apply-paste" style="flex:1;">⚡ Import Segments</button>
-                    <button class="yt-sk-btn" id="yt-sk-sb-btn-paste-clipboard">📋 Paste Clipboard</button>
+                    <button class="yt-sk-btn yt-sk-btn-primary" id="yt-sk-sb-btn-apply-paste">⚡ Import segments</button>
+                    <button class="yt-sk-btn" id="yt-sk-sb-btn-paste-clipboard">📋 Paste clipboard</button>
                 </div>
             </div>
 
-            <!-- Collapsible Manual Segment Drawer -->
+            <!-- Manual segment drawer -->
             <div class="yt-sk-sb-drawer" id="yt-sk-sb-manual-drawer" style="display:none;">
                 <div class="yt-sk-sb-drawer-header">
-                    <span>⚡ Add Manual Interval</span>
+                    <span>➕ Add one segment</span>
                     <div style="display:flex; align-items:center; gap:8px;">
-                        <span class="yt-sk-hotkey-badge" title="Press Alt+S while video plays">Hotkey: Alt+S</span>
+                        <span class="yt-sk-hotkey-badge" title="Press Alt+S while the video plays to set the start, then again to set the end">Hotkey Alt+S</span>
                         <button class="yt-sk-drawer-close" id="yt-sk-sb-btn-close-manual" title="Close">✕</button>
                     </div>
                 </div>
@@ -263,38 +275,38 @@ function createDashboard() {
                         <label>Start</label>
                         <div class="yt-sk-sb-time-wrap">
                             <input type="text" id="yt-sk-sb-input-start" class="yt-sk-turso-input yt-sk-sb-mini-input" placeholder="00:00:00">
-                            <button class="yt-sk-btn yt-sk-sb-curr-btn" id="yt-sk-sb-btn-curr-start" title="Grab current video time as Start">Now</button>
+                            <button class="yt-sk-btn yt-sk-sb-curr-btn" id="yt-sk-sb-btn-curr-start" title="Use the current video position">Now</button>
                         </div>
                     </div>
                     <div class="yt-sk-sb-time-group">
                         <label>End</label>
                         <div class="yt-sk-sb-time-wrap">
                             <input type="text" id="yt-sk-sb-input-end" class="yt-sk-turso-input yt-sk-sb-mini-input" placeholder="00:00:00">
-                            <button class="yt-sk-btn yt-sk-sb-curr-btn" id="yt-sk-sb-btn-curr-end" title="Grab current video time as End">Now</button>
+                            <button class="yt-sk-btn yt-sk-sb-curr-btn" id="yt-sk-sb-btn-curr-end" title="Use the current video position">Now</button>
                         </div>
                     </div>
                 </div>
-                <div class="yt-sk-sb-manual-row" style="margin-top:6px;">
-                    <select id="yt-sk-sb-select-cat" class="yt-sk-turso-input" style="flex:1; cursor:pointer; font-weight:600; padding:6px 8px; margin-bottom:0;">
-                        <option value="SPONSOR" selected>Sponsor (Paid Ad)</option>
-                        <option value="SELFPROMO">Self-Promotion (App, Course, Book)</option>
-                        <option value="INTERACTION">Interaction (Like, Sub, Bell, Telegram)</option>
-                        <option value="INTRO">Intro (Greetings, Silence)</option>
-                        <option value="OUTRO">Outro (Endcards, Goodbye)</option>
-                        <option value="PREVIEW">Preview (Recap, Timeline)</option>
-                        <option value="FILLER">Filler (Banter, Tangents, Jokes)</option>
+                <div class="yt-sk-sb-manual-row">
+                    <select id="yt-sk-sb-select-cat" class="yt-sk-turso-input">
+                        <option value="SPONSOR" selected>Sponsor — paid advertisement</option>
+                        <option value="SELFPROMO">Self-promotion — app, course, book</option>
+                        <option value="INTERACTION">Interaction — like, subscribe, bell</option>
+                        <option value="INTRO">Intro — greetings, silence</option>
+                        <option value="OUTRO">Outro — end cards, goodbye</option>
+                        <option value="PREVIEW">Preview — recap, upcoming</option>
+                        <option value="FILLER">Filler — banter, tangents, jokes</option>
                     </select>
                 </div>
-                <div class="yt-sk-sb-manual-row" style="margin-top:6px;">
-                    <input type="text" id="yt-sk-sb-input-reason" class="yt-sk-turso-input" style="flex:1; margin-bottom:0;" placeholder="Reason (e.g. App promo, casual chat)...">
-                    <button class="yt-sk-btn yt-sk-btn-primary" id="yt-sk-sb-btn-add-segment" style="white-space:nowrap; padding:6px 12px; font-weight:700;">➕ Add</button>
+                <div class="yt-sk-sb-manual-row">
+                    <input type="text" id="yt-sk-sb-input-reason" class="yt-sk-turso-input" placeholder="Reason (e.g. app promo, casual chat)">
+                    <button class="yt-sk-btn yt-sk-btn-primary yt-sk-btn-sm" id="yt-sk-sb-btn-add-segment">➕ Add</button>
                 </div>
             </div>
 
-            <!-- Safety Limit Status Card -->
+            <!-- Safety gauge -->
             <div class="yt-sk-sb-safety-card" id="yt-sk-sb-safety">
                 <div class="yt-sk-safety-header">
-                    <span class="yt-sk-safety-title">🛡️ Safety Limit (Max 80% video)</span>
+                    <span class="yt-sk-safety-title">🛡️ Safety limit — up to 80% of the video</span>
                     <span id="yt-sk-sb-ratio" class="yt-sk-safety-badge safe">0% (Safe)</span>
                 </div>
                 <div class="yt-sk-safety-track">
@@ -302,251 +314,250 @@ function createDashboard() {
                 </div>
             </div>
 
-            <!-- Cards Header & View Toggle -->
             <div class="yt-sk-sb-meta-bar">
-                <span id="yt-sk-sb-count-badge" class="yt-sk-meta-count">0 Segments</span>
-                <div class="yt-sk-sb-toggle-view" id="yt-sk-sb-toggle-view">
-                    <span id="yt-sk-sb-toggle-label">👁️ View: Cards</span>
-                    <span style="font-size:10px; opacity:0.7;">Switch to Raw ⇄</span>
+                <span id="yt-sk-sb-count-badge" class="yt-sk-meta-count">0 segments</span>
+                <div class="yt-sk-sb-toggle-view" id="yt-sk-sb-toggle-view" title="Switch between card view and raw interval text">
+                    <span id="yt-sk-sb-toggle-label">👁️ Cards</span>
+                    <span style="font-size:10px; opacity:0.7;">Raw ⇄</span>
                 </div>
             </div>
 
-            <!-- Card View -->
             <div id="yt-sk-sb-cards" class="yt-sk-sb-cards-container">
                 <div class="yt-sk-empty-placeholder">
-                    No segments detected yet.<br>Click <b>🤖 AI Scan</b> or <b>📋 Quick Paste</b> above.
+                    <div class="yt-sk-empty-icon">🚫</div>
+                    <div class="yt-sk-empty-title">Nothing detected yet</div>
+                    <div class="yt-sk-empty-desc">Click <b>🤖 Scan with AI</b>, or add segments with <b>📋 Quick paste</b> / <b>➕ Add manually</b>.</div>
                 </div>
             </div>
 
-            <!-- Raw Text / Intervals View (Initially hidden) -->
             <div id="yt-sk-sb-raw-container" style="display:none; flex-direction:column; gap:8px;">
-                <textarea id="yt-sk-sb-raw-textarea" class="yt-sk-turso-input" style="height:120px; font-family:'Fira Code', monospace; font-size:11px; line-height:1.4; resize:vertical; margin-bottom:0;" placeholder="Detected table and [HH:MM:SS]-[HH:MM:SS] intervals will appear here..."></textarea>
+                <textarea id="yt-sk-sb-raw-textarea" class="yt-sk-turso-input yt-sk-drawer-textarea" placeholder="Detected segments and [HH:MM:SS]-[HH:MM:SS] intervals appear here..."></textarea>
             </div>
 
-            <!-- Single Source of Truth Upload Toolbar -->
             <div class="yt-sk-sb-footer-bar">
-                <button class="yt-sk-btn yt-sk-btn-primary yt-sk-sb-upload-btn" id="yt-sk-btn-upload-sb" title="Upload all detected segments to SponsorBlock API">🚀 Upload to SponsorBlock</button>
-                <button class="yt-sk-btn" id="yt-sk-btn-copy-sb" title="Copy SponsorBlock intervals to clipboard">📋 Copy Format</button>
+                <button class="yt-sk-btn yt-sk-btn-primary yt-sk-sb-upload-btn" id="yt-sk-btn-upload-sb" title="Send every segment below to the SponsorBlock server">🚀 Upload to SponsorBlock</button>
+                <button class="yt-sk-btn" id="yt-sk-btn-copy-sb" title="Copy the intervals in SponsorBlock format">📋 Copy</button>
             </div>
         </div>
 
         <!-- TAB 4: SETTINGS -->
         <div class="yt-sk-tab-content" id="yt-sk-tab-settings">
-            <div class="yt-sk-section-title">Custom Shortcuts</div>
-            <div class="yt-sk-shortcut-grid">
-                <div class="yt-sk-shortcut-item">
-                    <label>Next Chapter</label>
-                    <div id="yt-sk-sc-next" class="yt-sk-shortcut-input">]</div>
-                </div>
-                <div class="yt-sk-shortcut-item">
-                    <label>Prev Chapter</label>
-                    <div id="yt-sk-sc-prev" class="yt-sk-shortcut-input">[</div>
-                </div>
-                <div class="yt-sk-shortcut-item">
-                    <label>Add Timestamp</label>
-                    <div id="yt-sk-sc-add" class="yt-sk-shortcut-input">Alt+X</div>
-                </div>
-                <div class="yt-sk-shortcut-item">
-                    <label>Mark Sponsor (SB)</label>
-                    <div id="yt-sk-sc-sb" class="yt-sk-shortcut-input" title="Press once for Start, again for End">Alt+S</div>
-                </div>
-            </div>
 
-            <div class="yt-sk-section-title" style="margin-top:6px;">AI Provider</div>
-            <select id="yt-sk-ai-provider" style="width:100%; padding:8px 10px; border-radius:6px; font-size:11px; background:rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.1); color:#00f2fe; cursor:pointer; outline:none; margin-bottom:8px; font-weight:600;">
-                <option value="aikit">AIKit Qwen (Claude Code API) - Active</option>
-                <option value="openrouter">OpenRouter AI</option>
-                <option value="custom">🛠️ Custom Provider (Local / OpenAI-compatible)</option>
-            </select>
-
-            <!-- AIKit (Claude Code API / Qwen) -->
-            <div id="yt-sk-panel-aikit">
-                <div class="yt-sk-section-title">Model</div>
-                <select id="yt-sk-aikit-model" style="width:100%; padding:8px 10px; border-radius:6px; font-size:11px; background:rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.1); color:#fff; cursor:pointer; outline:none; margin-bottom:6px;">
-                    <option value="qwen3.8-max">qwen3.8-max (Recommended - Fast & Powerful)</option>
-                    <option value="qwen3.7-plus">qwen3.7-plus</option>
-                </select>
-                <div class="yt-sk-section-title">Auth Token (JWT)</div>
-                <input type="password" id="yt-sk-aikit-token" class="yt-sk-turso-input" placeholder="ANTHROPIC_AUTH_TOKEN">
-                <div class="yt-sk-section-title">Endpoint URL</div>
-                <input type="text" id="yt-sk-aikit-url" class="yt-sk-turso-input" value="https://claude.aikit.club/qwen.aikit.club/v1">
-            </div>
-
-            <!-- OpenRouter -->
-            <div id="yt-sk-panel-openrouter" style="display:none;">
-                <div class="yt-sk-section-title">OpenRouter API Key</div>
-                <input type="password" id="yt-sk-openrouter-key" class="yt-sk-turso-input" placeholder="sk-or-v1-...">
-                <div class="yt-sk-section-title">Model</div>
-                <input type="text" id="yt-sk-openrouter-model" class="yt-sk-turso-input" placeholder="google/gemma-4-31b-it:free">
-            </div>
-
-            <!-- Custom OpenAI-compatible Provider (Local e.g. 127.0.0.1:8002/v1 or Remote) -->
-            <div id="yt-sk-panel-custom" style="display:none;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                    <div class="yt-sk-section-title" style="margin:0;">Custom Profiles</div>
-                    <div style="display:flex; gap:4px;">
-                        <button id="yt-sk-custom-btn-new-profile" class="yt-sk-btn yt-sk-btn-sm" style="font-size:10px; padding:2px 7px;">➕ New</button>
-                        <button id="yt-sk-custom-btn-del-profile" class="yt-sk-btn yt-sk-btn-sm" style="font-size:10px; padding:2px 7px; color:#ff6b6b;">🗑️</button>
+            <div class="yt-sk-card">
+                <div class="yt-sk-section-title">⌨️ Keyboard shortcuts</div>
+                <div class="yt-sk-section-sub">Click a box, then press the key you want to use.</div>
+                <div class="yt-sk-shortcut-grid">
+                    <div class="yt-sk-shortcut-item">
+                        <label>Next chapter</label>
+                        <div id="yt-sk-sc-next" class="yt-sk-shortcut-input">]</div>
+                    </div>
+                    <div class="yt-sk-shortcut-item">
+                        <label>Previous chapter</label>
+                        <div id="yt-sk-sc-prev" class="yt-sk-shortcut-input">[</div>
+                    </div>
+                    <div class="yt-sk-shortcut-item">
+                        <label>Add a timestamp</label>
+                        <div id="yt-sk-sc-add" class="yt-sk-shortcut-input">Alt+X</div>
+                    </div>
+                    <div class="yt-sk-shortcut-item">
+                        <label>Mark sponsor (start/end)</label>
+                        <div id="yt-sk-sc-sb" class="yt-sk-shortcut-input" title="Press once for Start, again for End">Alt+S</div>
                     </div>
                 </div>
-                <select id="yt-sk-custom-profile-select" style="width:100%; padding:6px 8px; border-radius:6px; font-size:11px; background:rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.1); color:#fff; cursor:pointer; outline:none; margin-bottom:6px;">
-                    <option value="default">Local Radio House (8002)</option>
+            </div>
+
+            <div class="yt-sk-card">
+                <div class="yt-sk-section-title">🤖 AI provider</div>
+                <div class="yt-sk-section-sub">Where the chapter writing happens. Pick one and fill in its details below.</div>
+                <select id="yt-sk-ai-provider" class="yt-sk-select">
+                    <option value="aikit">AIKit Qwen (Claude Code API) — recommended</option>
+                    <option value="openrouter">OpenRouter</option>
+                    <option value="custom">🛠️ Custom provider (local / OpenAI-compatible)</option>
                 </select>
 
-                <div class="yt-sk-section-title">Provider Name</div>
-                <input type="text" id="yt-sk-custom-name" class="yt-sk-turso-input" value="Local Radio House (8002)" placeholder="e.g. Local vLLM, Ollama, DeepSeek">
-
-                <div class="yt-sk-section-title">Base URL / Endpoint</div>
-                <input type="text" id="yt-sk-custom-url" class="yt-sk-turso-input" value="http://127.0.0.1:8002/v1" placeholder="http://127.0.0.1:8002/v1">
-                <div style="font-size:10px; color:var(--yt-sk-text-muted); margin-top:-4px; margin-bottom:6px;">
-                    Endpoint: <code>http://127.0.0.1:8002/v1</code> or any OpenAI-compatible base.
-                </div>
-
-                <div class="yt-sk-section-title">API Key (Optional)</div>
-                <input type="password" id="yt-sk-custom-key" class="yt-sk-turso-input" placeholder="Leave empty for local servers without auth">
-
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                    <div class="yt-sk-section-title" style="margin:0;">Model</div>
-                    <button id="yt-sk-custom-btn-fetch-models" class="yt-sk-btn yt-sk-btn-sm" style="font-size:10px; padding:2px 8px; background:rgba(0,242,254,0.15); color:var(--yt-sk-accent); border:1px solid rgba(0,242,254,0.3);">🔄 Fetch Models</button>
-                </div>
-                <div style="display:flex; gap:6px; align-items:center; margin-bottom:6px;">
-                    <select id="yt-sk-custom-model-select" style="flex:1; padding:7px 8px; border-radius:6px; font-size:11px; background:rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.1); color:#fff; cursor:pointer; outline:none;">
-                        <option value="qwen3.8-flash" selected>qwen3.8-flash (Recommended)</option>
-                        <option value="deepseek-v4-flash-0731">deepseek-v4-flash-0731</option>
-                        <option value="gemma-4-31b-it">gemma-4-31b-it</option>
-                        <option value="__custom__">✏️ Enter Custom Model Name...</option>
+                <div id="yt-sk-panel-aikit">
+                    <div class="yt-sk-section-title">Model</div>
+                    <select id="yt-sk-aikit-model" class="yt-sk-select">
+                        <option value="qwen3.8-max">qwen3.8-max (fast and powerful)</option>
+                        <option value="qwen3.7-plus">qwen3.7-plus</option>
                     </select>
-                    <input type="text" id="yt-sk-custom-model-manual" class="yt-sk-turso-input" style="flex:1; display:none; margin:0;" placeholder="model name">
+                    <div class="yt-sk-section-title">Auth token</div>
+                    <input type="password" id="yt-sk-aikit-token" class="yt-sk-turso-input" placeholder="Your AIKit auth token">
+                    <div class="yt-sk-section-title">Endpoint URL</div>
+                    <input type="text" id="yt-sk-aikit-url" class="yt-sk-turso-input" value="https://claude.aikit.club/qwen.aikit.club/v1">
                 </div>
-                <div id="yt-sk-custom-models-status" style="font-size:10px; color:var(--yt-sk-text-muted); margin-top:-4px; margin-bottom:6px; display:none;"></div>
 
-                <div class="yt-sk-toggle-row" style="margin-top:6px; margin-bottom:8px; padding:6px 8px; background:rgba(255,255,255,0.03); border-radius:6px; border:1px solid rgba(255,255,255,0.06);">
-                    <div class="yt-sk-toggle-text">
-                        <div class="yt-sk-toggle-title" style="display:flex; align-items:center; gap:6px;">
-                            <span>⚡ Full Transcript (No Chunking)</span>
-                            <span id="yt-sk-custom-128k-badge" style="display:none; font-size:9px; background:rgba(0,242,254,0.2); color:#00f2fe; padding:1px 5px; border-radius:4px; font-weight:700;">128k+ OK</span>
+                <div id="yt-sk-panel-openrouter" style="display:none;">
+                    <div class="yt-sk-section-title">OpenRouter API key</div>
+                    <input type="password" id="yt-sk-openrouter-key" class="yt-sk-turso-input" placeholder="sk-or-v1-...">
+                    <div class="yt-sk-section-title">Model</div>
+                    <input type="text" id="yt-sk-openrouter-model" class="yt-sk-turso-input" placeholder="google/gemma-4-31b-it:free">
+                </div>
+
+                <div id="yt-sk-panel-custom" style="display:none;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <div class="yt-sk-section-title" style="margin:0;">Saved profiles</div>
+                        <div style="display:flex; gap:5px;">
+                            <button id="yt-sk-custom-btn-new-profile" class="yt-sk-btn yt-sk-btn-sm">➕ New</button>
+                            <button id="yt-sk-custom-btn-del-profile" class="yt-sk-btn yt-sk-btn-sm" title="Delete this profile">🗑️</button>
                         </div>
-                        <div class="yt-sk-toggle-desc">Send entire transcript at once. Auto-enabled for GLM 5.3 (Lucky Cat / Proton Lumo).</div>
+                    </div>
+                    <select id="yt-sk-custom-profile-select" class="yt-sk-select">
+                        <option value="default">Local Radio House (8002)</option>
+                    </select>
+
+                    <div class="yt-sk-section-title">Profile name</div>
+                    <input type="text" id="yt-sk-custom-name" class="yt-sk-turso-input" value="Local Radio House (8002)" placeholder="e.g. Local vLLM, Ollama, DeepSeek">
+
+                    <div class="yt-sk-section-title">Base URL</div>
+                    <input type="text" id="yt-sk-custom-url" class="yt-sk-turso-input" value="http://127.0.0.1:8002/v1" placeholder="http://127.0.0.1:8002/v1">
+                    <div class="yt-sk-section-sub" style="margin-top:-2px;">Any OpenAI-compatible endpoint, local or remote.</div>
+
+                    <div class="yt-sk-section-title">API key (optional)</div>
+                    <input type="password" id="yt-sk-custom-key" class="yt-sk-turso-input" placeholder="Leave empty for local servers with no auth">
+
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <div class="yt-sk-section-title" style="margin:0;">Model</div>
+                        <button id="yt-sk-custom-btn-fetch-models" class="yt-sk-btn yt-sk-btn-sm">🔄 Fetch models</button>
+                    </div>
+                    <div style="display:flex; gap:6px; align-items:center; margin-bottom:6px;">
+                        <select id="yt-sk-custom-model-select" class="yt-sk-select" style="flex:1; margin-bottom:0;">
+                            <option value="qwen3.8-flash" selected>qwen3.8-flash (recommended)</option>
+                            <option value="deepseek-v4-flash-0731">deepseek-v4-flash-0731</option>
+                            <option value="gemma-4-31b-it">gemma-4-31b-it</option>
+                            <option value="__custom__">✏️ Enter a custom model name…</option>
+                        </select>
+                        <input type="text" id="yt-sk-custom-model-manual" class="yt-sk-turso-input" style="flex:1; display:none; margin:0;" placeholder="model name">
+                    </div>
+                    <div id="yt-sk-custom-models-status" class="yt-sk-section-sub" style="display:none; margin-bottom:6px;"></div>
+
+                    <div class="yt-sk-toggle-row" style="margin-top:6px;">
+                        <div class="yt-sk-toggle-text">
+                            <div class="yt-sk-toggle-title" style="display:flex; align-items:center; gap:6px;">
+                                <span>⚡ Send the full transcript (no chunking)</span>
+                                <span id="yt-sk-custom-128k-badge" class="yt-sk-hotkey-badge" style="display:none;">128k+ OK</span>
+                            </div>
+                            <div class="yt-sk-toggle-desc">Best for large-context models. Turned on automatically for GLM 5.3.</div>
+                        </div>
+                        <label class="yt-sk-switch">
+                            <input type="checkbox" id="yt-sk-custom-no-chunking">
+                            <span class="yt-sk-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <button class="yt-sk-btn yt-sk-btn-primary" id="yt-sk-btn-test-ai" style="margin-top:6px;">⚡ Test connection</button>
+                <div id="yt-sk-ai-test-result" style="display:none; font-size:11px; padding:8px 11px; border-radius:9px; margin-top:6px; line-height:1.45;"></div>
+            </div>
+
+            <div class="yt-sk-card">
+                <div class="yt-sk-section-title">🚫 SponsorBlock</div>
+                <div class="yt-sk-section-sub">Needed only if you want to upload detected segments to the SponsorBlock server.</div>
+                <input type="password" id="yt-sk-sb-user-id" class="yt-sk-turso-input" placeholder="SponsorBlock private user ID (UUID)">
+                <div class="yt-sk-section-sub" style="margin-top:-2px;">SponsorBlock extension → Options → Settings → Copy private user ID.</div>
+                <select id="yt-sk-sb-category-mode" class="yt-sk-select">
+                    <option value="sponsor_only">Upload everything as "Sponsor" (safe default)</option>
+                    <option value="mapped">Use the AI's categories (Sponsor / SelfPromo / Filler / Intro / Outro)</option>
+                </select>
+            </div>
+
+            <div class="yt-sk-card">
+                <div class="yt-sk-section-title">📜 Transcript fallback</div>
+                <div class="yt-sk-section-sub">Used automatically when YouTube's own transcript is unavailable or blocked.</div>
+                <input type="password" id="yt-sk-transcript-api-key" class="yt-sk-turso-input" placeholder="TranscriptAPI.com key (optional)">
+            </div>
+
+            <div class="yt-sk-card">
+                <div class="yt-sk-section-title">☁️ Cloud database (Turso) — optional</div>
+                <div class="yt-sk-section-sub">Save and reload your chapters across devices.</div>
+                <input type="text" id="yt-sk-turso-url" class="yt-sk-turso-input" placeholder="Turso database URL">
+                <input type="password" id="yt-sk-turso-token" class="yt-sk-turso-input" placeholder="Turso auth token">
+            </div>
+
+            <div class="yt-sk-card">
+                <div class="yt-sk-section-title">⚡ Automation</div>
+                <div class="yt-sk-toggle-row">
+                    <div class="yt-sk-toggle-text">
+                        <div class="yt-sk-toggle-title">Generate chapters when a video opens</div>
+                        <div class="yt-sk-toggle-desc">Fetch the transcript and write chapters automatically</div>
                     </div>
                     <label class="yt-sk-switch">
-                        <input type="checkbox" id="yt-sk-custom-no-chunking">
+                        <input type="checkbox" id="yt-sk-auto-generate">
+                        <span class="yt-sk-slider"></span>
+                    </label>
+                </div>
+                <div class="yt-sk-toggle-row">
+                    <div class="yt-sk-toggle-text">
+                        <div class="yt-sk-toggle-title">Auto save &amp; comment</div>
+                        <div class="yt-sk-toggle-desc">Save to your database and post the comment when chapters are ready</div>
+                    </div>
+                    <label class="yt-sk-switch">
+                        <input type="checkbox" id="yt-sk-auto-save-sync">
+                        <span class="yt-sk-slider"></span>
+                    </label>
+                </div>
+                <div class="yt-sk-toggle-row">
+                    <div class="yt-sk-toggle-text">
+                        <div class="yt-sk-toggle-title">Auto upload ads to SponsorBlock</div>
+                        <div class="yt-sk-toggle-desc">Scan and upload removable segments after the chapters</div>
+                    </div>
+                    <label class="yt-sk-switch">
+                        <input type="checkbox" id="yt-sk-auto-upload-sb">
+                        <span class="yt-sk-slider"></span>
+                    </label>
+                </div>
+                <div class="yt-sk-toggle-row">
+                    <div class="yt-sk-toggle-text">
+                        <div class="yt-sk-toggle-title">Post timestamps as a comment</div>
+                        <div class="yt-sk-toggle-desc">Post the Q&amp;A timestamps on YouTube when you save</div>
+                    </div>
+                    <label class="yt-sk-switch">
+                        <input type="checkbox" id="yt-sk-auto-comment">
+                        <span class="yt-sk-slider"></span>
+                    </label>
+                </div>
+                <div class="yt-sk-toggle-row">
+                    <div class="yt-sk-toggle-text">
+                        <div class="yt-sk-toggle-title">Show the mini floating player</div>
+                        <div class="yt-sk-toggle-desc">A small bar at the bottom with previous / next buttons</div>
+                    </div>
+                    <label class="yt-sk-switch">
+                        <input type="checkbox" id="yt-sk-show-mini-widget">
                         <span class="yt-sk-slider"></span>
                     </label>
                 </div>
             </div>
-            
-            <button class="yt-sk-btn yt-sk-btn-primary" id="yt-sk-btn-test-ai" style="margin-top:4px; margin-bottom: 6px;">⚡ Test AI Connection</button>
-            <div id="yt-sk-ai-test-result" style="display:none; font-size:11px; padding:6px 10px; border-radius:6px; margin-bottom:8px; line-height: 1.4;"></div>
 
-            <!-- SponsorBlock Integration -->
-            <div class="yt-sk-section-title" style="margin-top:6px;">SponsorBlock API Integration</div>
-            <input type="password" id="yt-sk-sb-user-id" class="yt-sk-turso-input" placeholder="SponsorBlock Private User ID (UUID)">
-            <div style="font-size:10px; color:var(--yt-sk-text-muted); margin-top:-4px; margin-bottom:6px;">Find in SponsorBlock Extension Options > Settings > Copy Private User ID.</div>
-            <select id="yt-sk-sb-category-mode" style="width:100%; padding:8px 10px; border-radius:6px; font-size:11px; background:rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.1); color:#00f2fe; cursor:pointer; outline:none; margin-bottom:8px; font-weight:600;">
-                <option value="sponsor_only">Category: Permanent "Sponsor" (Safe Default)</option>
-                <option value="mapped">Category: Map AI Categories (Sponsor / SelfPromo / Filler / Intro / Outro)</option>
-            </select>
-
-            <!-- TranscriptAPI.com Fallback -->
-            <div class="yt-sk-section-title" style="margin-top:6px;">TranscriptAPI.com (Fallback Fetcher)</div>
-            <input type="password" id="yt-sk-transcript-api-key" class="yt-sk-turso-input" placeholder="sk_ZDrY9xqIVpMGguu0pWru_CEUtmHO-eMW1rWqf_Wk7WA (Default)">
-            <div style="font-size:10px; color:var(--yt-sk-text-muted); margin-top:-4px; margin-bottom:6px;">Automatic fallback when native YouTube transcript is unavailable or blocked.</div>
-
-            <div class="yt-sk-section-title" style="margin-top:6px;">Turso Database (Optional)</div>
-            <input type="text" id="yt-sk-turso-url" class="yt-sk-turso-input" placeholder="Turso Database URL">
-            <input type="password" id="yt-sk-turso-token" class="yt-sk-turso-input" placeholder="Turso Auth Token">
-
-
-            <div class="yt-sk-section-title" style="margin-top:8px;">Auto Timestamp Maker (AI)</div>
-            <div class="yt-sk-toggle-row">
-                <div class="yt-sk-toggle-text">
-                    <div class="yt-sk-toggle-title">Auto Generate on Video Open</div>
-                    <div class="yt-sk-toggle-desc">Auto-extract transcript & generate chapters with AI</div>
+            <div class="yt-sk-card">
+                <div class="yt-sk-section-title">🔔 Completion sound</div>
+                <div class="yt-sk-toggle-row">
+                    <div class="yt-sk-toggle-text">
+                        <div class="yt-sk-toggle-title">Play a sound when the AI finishes</div>
+                        <div class="yt-sk-toggle-desc">A short chime when chapters are ready</div>
+                    </div>
+                    <label class="yt-sk-switch">
+                        <input type="checkbox" id="yt-sk-sound-enabled">
+                        <span class="yt-sk-slider"></span>
+                    </label>
                 </div>
-                <label class="yt-sk-switch">
-                    <input type="checkbox" id="yt-sk-auto-generate">
-                    <span class="yt-sk-slider"></span>
-                </label>
-            </div>
-
-            <div class="yt-sk-toggle-row">
-                <div class="yt-sk-toggle-text">
-                    <div class="yt-sk-toggle-title">Auto Save to DB & Post Comment</div>
-                    <div class="yt-sk-toggle-desc">Automatically save to Turso DB & post comment on YouTube</div>
+                <div style="display:flex; gap:6px; align-items:center; margin-bottom:8px;">
+                    <input type="text" id="yt-sk-sound-url" class="yt-sk-turso-input" style="margin-bottom:0;" placeholder="Default chime — or paste an MP3 URL / pick a file">
+                    <button class="yt-sk-btn yt-sk-btn-sm" id="yt-sk-btn-browse-sound" title="Upload your own audio file">📁 File</button>
+                    <input type="file" id="yt-sk-sound-file-input" accept="audio/*" style="display:none;">
                 </div>
-                <label class="yt-sk-switch">
-                    <input type="checkbox" id="yt-sk-auto-save-sync">
-                    <span class="yt-sk-slider"></span>
-                </label>
-            </div>
-
-            <div class="yt-sk-toggle-row">
-                <div class="yt-sk-toggle-text">
-                    <div class="yt-sk-toggle-title">Auto SponsorBlock Segment Uploader</div>
-                    <div class="yt-sk-toggle-desc">Scan removable intervals & auto-upload to SponsorBlock after chapters</div>
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; background:var(--cl-surface-2); padding:9px 12px; border-radius:11px; border:1px solid var(--cl-border);">
+                    <div style="display:flex; align-items:center; gap:8px; flex:1;">
+                        <span style="font-size:11.5px; font-weight:600; color:var(--cl-ink);">🔊 Volume</span>
+                        <input type="range" id="yt-sk-sound-volume" min="0" max="100" value="80" style="flex:1; cursor:pointer; accent-color: var(--cl-accent);">
+                        <span id="yt-sk-volume-val" style="font-size:11px; font-weight:700; color:var(--cl-accent-ink); min-width:32px;">80%</span>
+                    </div>
+                    <button class="yt-sk-btn yt-sk-btn-sm" id="yt-sk-btn-test-sound" title="Play the sound once">▶ Test</button>
                 </div>
-                <label class="yt-sk-switch">
-                    <input type="checkbox" id="yt-sk-auto-upload-sb">
-                    <span class="yt-sk-slider"></span>
-                </label>
             </div>
 
-            <div class="yt-sk-section-title" style="margin-top:4px;">Manual Save Preferences</div>
-            <div class="yt-sk-toggle-row">
-                <div class="yt-sk-toggle-text">
-                    <div class="yt-sk-toggle-title">Post timestamps as comment</div>
-                    <div class="yt-sk-toggle-desc">Auto-post concise Q# & Ans on YouTube when saving</div>
-                </div>
-                <label class="yt-sk-switch">
-                    <input type="checkbox" id="yt-sk-auto-comment">
-                    <span class="yt-sk-slider"></span>
-                </label>
-            </div>
-
-            <div class="yt-sk-section-title" style="margin-top:4px;">Mini Floating Player</div>
-            <div class="yt-sk-toggle-row">
-                <div class="yt-sk-toggle-text">
-                    <div class="yt-sk-toggle-title">Show Mini Player Widget</div>
-                    <div class="yt-sk-toggle-desc">Floating bar at bottom with next/prev buttons</div>
-                </div>
-                <label class="yt-sk-switch">
-                    <input type="checkbox" id="yt-sk-show-mini-widget">
-                    <span class="yt-sk-slider"></span>
-                </label>
-            </div>
-
-            <!-- COMPLETION SOUND EFFECT -->
-            <div class="yt-sk-section-title" style="margin-top:6px;">Completion Sound Effect</div>
-            <div class="yt-sk-toggle-row">
-                <div class="yt-sk-toggle-text">
-                    <div class="yt-sk-toggle-title">Play Sound on AI Done</div>
-                    <div class="yt-sk-toggle-desc">Play audio alert when chapters finish generating</div>
-                </div>
-                <label class="yt-sk-switch">
-                    <input type="checkbox" id="yt-sk-sound-enabled">
-                    <span class="yt-sk-slider"></span>
-                </label>
-            </div>
-
-            <div style="display: flex; gap: 6px; align-items: center; margin-bottom: 6px;">
-                <input type="text" id="yt-sk-sound-url" class="yt-sk-turso-input" style="margin-bottom:0;" placeholder="Default: Anime Wow (or paste MP3 URL / select file)">
-                <button class="yt-sk-btn" id="yt-sk-btn-browse-sound" style="padding: 7px 10px; font-size:10px; white-space:nowrap;" title="Upload custom audio file">📁 File</button>
-                <input type="file" id="yt-sk-sound-file-input" accept="audio/*" style="display:none;">
-            </div>
-
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; background: var(--yt-sk-btn-bg); padding: 7px 10px; border-radius: 8px; border: 1px solid var(--yt-sk-btn-border);">
-                <div style="display:flex; align-items:center; gap: 8px; flex: 1;">
-                    <span style="font-size:11px; font-weight:600; color:var(--yt-sk-text);">🔊 Volume</span>
-                    <input type="range" id="yt-sk-sound-volume" min="0" max="100" value="80" style="flex:1; cursor:pointer; accent-color: var(--yt-sk-accent);">
-                    <span id="yt-sk-volume-val" style="font-size:10px; font-weight:700; color:var(--yt-sk-accent); min-width:28px;">80%</span>
-                </div>
-                <button class="yt-sk-btn" id="yt-sk-btn-test-sound" style="margin-left: 10px; padding: 4px 10px; font-size: 10px; font-weight: 700; border-color: var(--yt-sk-accent);" title="Play test sound">▶ Test</button>
-            </div>
-
-            <button id="yt-sk-btn-save-settings">Save All Settings</button>
+            <button id="yt-sk-btn-save-settings">Save all settings</button>
         </div>
 
-        <!-- FOOTER -->
         <div class="yt-sk-footer">
             made with 💖 by <a href="https://github.com/pavnxet/yt-timestamp-skipper" target="_blank">pavnxet</a>
         </div>
@@ -662,7 +673,7 @@ function createDashboard() {
     let isDraggingDash = false, dashOffset = [0, 0];
     const startDashDrag = (clientX, clientY, target) => {
         if (window.innerWidth <= 600) return; // On mobile, dashboard is docked to bottom sheet
-        if (target.closest && target.closest('.yt-sk-header-actions')) return;
+        if (target.closest && target.closest('.yt-sk-header-actions, .yt-sk-header-center')) return;
         isDraggingDash = true;
         const rect = dashboard.getBoundingClientRect();
         dashOffset = [rect.left - clientX, rect.top - clientY];
@@ -705,7 +716,7 @@ function createDashboard() {
 
     // Double-click header to Minimize / Maximize
     header.ondblclick = (e) => {
-        if (e.target.closest('.yt-sk-header-actions')) return;
+        if (e.target.closest('.yt-sk-header-actions, .yt-sk-header-center')) return;
         dashboard.classList.toggle('yt-sk-minimized');
     };
 
@@ -1947,7 +1958,18 @@ function createDashboard() {
         if (parsedSegments.length === 0) {
             const emptyEl = document.createElement('div');
             emptyEl.className = 'yt-sk-empty-placeholder';
-            emptyEl.textContent = 'Scanned raw intervals ready in Raw View.';
+            const iconEl = document.createElement('div');
+            iconEl.className = 'yt-sk-empty-icon';
+            iconEl.textContent = '\u{1F6AB}';
+            const titleEl = document.createElement('div');
+            titleEl.className = 'yt-sk-empty-title';
+            titleEl.textContent = 'Nothing detected yet';
+            const descEl = document.createElement('div');
+            descEl.className = 'yt-sk-empty-desc';
+            descEl.textContent = 'Click "Scan with AI", or add segments with Quick paste / Add manually.';
+            emptyEl.appendChild(iconEl);
+            emptyEl.appendChild(titleEl);
+            emptyEl.appendChild(descEl);
             sbCardsContainer.appendChild(emptyEl);
             return;
         }
@@ -2429,7 +2451,18 @@ function createDashboard() {
         if (!timestamps.length) {
             const emptyEl = document.createElement('div');
             emptyEl.className = 'yt-sk-empty-placeholder';
-            emptyEl.textContent = 'No Chapters Found';
+            const iconEl = document.createElement('div');
+            iconEl.className = 'yt-sk-empty-icon';
+            iconEl.textContent = '\u{1F4CC}';
+            const titleEl = document.createElement('div');
+            titleEl.className = 'yt-sk-empty-title';
+            titleEl.textContent = 'No chapters yet';
+            const descEl = document.createElement('div');
+            descEl.className = 'yt-sk-empty-desc';
+            descEl.textContent = 'Click "\u26A1 Generate everything" at the top, or paste timestamps in the Editor tab.';
+            emptyEl.appendChild(iconEl);
+            emptyEl.appendChild(titleEl);
+            emptyEl.appendChild(descEl);
             list.appendChild(emptyEl);
             return;
         }
