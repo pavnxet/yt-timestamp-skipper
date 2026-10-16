@@ -21,5 +21,10 @@ Output: a list like
 
 Then add, under clear headings: a one-line summary per chapter; the key terms or definitions introduced; a tag per chapter ([Concept] / [Example] / [Derivation] / [Recap]); and the 3 chapters most important for revision.
 
+### Easy Copy-Paste Chapters Block (Markdown & YouTube Description)
+- After the main chapter list, ALWAYS include a subsection titled exactly: ### Easy Copy-Paste Chapters Block (Markdown & YouTube Description).
+- Inside this subsection, output a fenced markdown code block (open with ```markdown, close with ```) containing all chapters in the exact format: - HH:MM:SS — Chapter Title (or MM:SS if under 1 hour).
+- Always start the first line of this copy-paste block at 00:00:00 (or 00:00) so it works directly for YouTube chapters, and strip all citation tags ([cite: ...]) from inside the code block.
+
 Transcript:
 <paste the transcript here>

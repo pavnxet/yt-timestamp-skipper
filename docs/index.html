@@ -281,9 +281,99 @@ footer{border-top:1px solid var(--border); background:var(--surface-2); padding:
   <div class="wrap">
     <div class="eyebrow">Free · works with any AI</div>
     <h2>Process any video with any AI</h2>
-    <p class="lead">You don't need the extension — or any API key — to get value out of this. Grab the transcript of any video, paste one of these prompts into ChatGPT, Claude, Gemini or a local model, and paste the transcript after it. Three jobs, three prompts.</p>
+    <p class="lead">You don't need the extension — or any API key — to get value out of this. Grab the transcript of any video, paste one of these prompts into ChatGPT, Claude, Gemini or a local model, and paste the transcript after it. Run the three jobs one at a time, or use the combined prompt to get all three at once — and download it as a <code>skill.md</code> file to reuse anywhere.</p>
 
     <div class="mode" style="margin-top:30px">
+      <div class="mode-head"><span class="tag">All-in-one</span><h3>⭐ Combined — all three at once</h3></div>
+      <p class="muted">One prompt that returns the chapters, the SponsorBlock segments and the MCQ timestamps together — each in its own clearly separated section. Handy when you want everything in a single pass. Download it as <code>skill.md</code> to keep or share.</p>
+      <div class="prompt">
+        <div class="prompt-bar"><span>Prompt</span>
+          <span style="display:flex; gap:8px;">
+            <button class="btn btn-sm download" data-download="p4" data-filename="skill.md">⬇️ Download skill.md</button>
+            <button class="btn btn-sm copy" data-copy="p4">Copy prompt</button>
+          </span>
+        </div>
+<pre id="p4">You are a video analysis expert. I will give you ONE transcript whose lines already carry timestamps. Produce THREE independent outputs, in this exact order, under clear headings. Treat each part as a separate pass - do not blend one part's output into another.
+
+========================================
+PART 1 - CHAPTERS
+========================================
+Produce a chapter list.
+- Each chapter = a start timestamp + a short, specific title (3-7 words) naming the topic covered from that timestamp until the next chapter begins.
+- Break only at genuine conceptual boundaries: a new idea, definition, sub-topic, method, worked example, or a shift from theory to practice. Not at every pause.
+- Merge or drop filler (greetings, intros, sponsor reads, recaps); fold short remarks into the nearest real chapter.
+- Use the start timestamp of the FIRST line of that segment.
+- Use only timestamps that actually appear in the transcript. Never estimate, round or invent one.
+- Format timestamps as MM:SS (use HH:MM:SS only if the video runs over an hour). Never write 04:46:00.
+- Keep titles in the transcript's language. Aim for about 8-20 chapters on a 20-60 minute video - do not over-segment.
+
+Output a list like:
+- 00:00:12 - Introduction and scope of the theory
+- 00:02:40 - Core definitions
+
+Then add, under clear headings: a one-line summary per chapter; the key terms or definitions introduced; a tag per chapter ([Concept] / [Example] / [Derivation] / [Recap]); and the 3 chapters most important for revision.
+
+### Easy Copy-Paste Chapters Block (Markdown &amp; YouTube Description)
+- After the main chapter list, ALWAYS include a subsection titled exactly: ### Easy Copy-Paste Chapters Block (Markdown &amp; YouTube Description).
+- Inside this subsection, output a fenced markdown code block (open with ```markdown, close with ```) containing all chapters in the exact format: - HH:MM:SS — Chapter Title (or MM:SS if under 1 hour).
+- Always start the first line of this copy-paste block at 00:00:00 (or 00:00) so it works directly for YouTube chapters, and strip all citation tags ([cite: ...]) from inside the code block.
+
+========================================
+PART 2 - SPONSORBLOCK SEGMENTS
+========================================
+Find every portion that should be REMOVED or SKIPPED and label it with exactly one category:
+- SPONSOR - paid promotions, product placements, brand mentions.
+- SELFPROMO - channel merch, memberships, paid courses, social links.
+- INTERACTION - asking to like, subscribe, follow, comment, ring the bell.
+- INTRO - non-educational opener, channel bumper, greeting chatter.
+- OUTRO - end credits, thank-yous, goodbye cards.
+- FILLER - off-topic tangents, long chit-chat, technical difficulties.
+
+Rules:
+- Work only on removable-segment extraction. Do not output chapters or question timestamps here.
+- Merging: if two or more removable segments run back-to-back (one ends as the next begins, or with only a few seconds between), merge them into ONE continuous segment from the start of the first to the end of the last, even across different categories. Give the merged segment the dominant category by priority: SPONSOR &gt; SELFPROMO &gt; INTERACTION &gt; INTRO &gt; OUTRO &gt; FILLER.
+- In the Reason column, name the merged elements (e.g. "Intro + Sponsor").
+- Use only timestamps that appear in the transcript. Format MM:SS (HH:MM:SS only if over an hour).
+
+Output this table:
+
+| # | Start | End | Category | Reason |
+| - | ----- | --- | -------- | ------ |
+| 1 | 01:15 | 02:40 | SPONSOR | Intro + Product promotion |
+
+Then immediately after, the automation output - only the merged intervals and dominant category, one per line:
+[MM:SS]-[MM:SS] CATEGORY
+
+If nothing is removable, write: NO REMOVABLE SEGMENTS FOUND
+
+========================================
+PART 3 - MCQ / QUESTION TIMESTAMPS
+========================================
+Find every distinct multiple-choice question, problem-solving item, or question discussion and return its timestamps.
+For each question, kept in video order, capture:
+- Question Start - where the question begins.
+- Correct Option Timestamp - where the correct option is revealed or highlighted, or N/A.
+- Answer Start - where the detailed solution or explanation begins, or N/A.
+- Correct Option - a single letter (A, B, C, D) or Unclear.
+
+Rules:
+- Use only timestamps that appear in the transcript. Never guess.
+- If a timestamp is missing write N/A; if the option is unstated write Unclear.
+- Ignore rhetorical questions and follow-up chatter - only genuine exam questions count.
+- If there are no questions, write the header row alone.
+
+Output ONLY this table for Part 3 - no preamble, no code fences:
+
+| Q# | Question Start | Correct Option Timestamp | Answer Start | Correct Option |
+| -- | -------------- | ------------------------ | ------------ | -------------- |
+| Q1 | 04:46          | 06:54                    | 05:07        | B              |
+
+Transcript:
+&lt;paste the transcript here&gt;</pre>
+      </div>
+    </div>
+
+    <div class="mode">
       <div class="mode-head"><span class="tag">Mode 1</span><h3>📌 Chapters</h3></div>
       <p class="muted">A clean chapter list with a start time and a short, specific title for each segment.</p>
       <div class="prompt">
@@ -304,6 +394,11 @@ Output: a list like
 - 00:02:40 - Core definitions
 
 Then add, under clear headings: a one-line summary per chapter; the key terms or definitions introduced; a tag per chapter ([Concept] / [Example] / [Derivation] / [Recap]); and the 3 chapters most important for revision.
+
+### Easy Copy-Paste Chapters Block (Markdown & YouTube Description)
+- After the main chapter list, ALWAYS include a subsection titled exactly: ### Easy Copy-Paste Chapters Block (Markdown & YouTube Description).
+- Inside this subsection, output a fenced markdown code block (open with ```markdown, close with ```) containing all chapters in the exact format: - HH:MM:SS — Chapter Title (or MM:SS if under 1 hour).
+- Always start the first line of this copy-paste block at 00:00:00 (or 00:00) so it works directly for YouTube chapters, and strip all citation tags ([cite: ...]) from inside the code block.
 
 Transcript:
 &lt;paste the transcript here&gt;</pre>
@@ -382,7 +477,7 @@ Transcript:
       <div class="card"><h3>From YouTube</h3><p>Open the video → <b>… More</b> under the title → <b>Show transcript</b>. Click the transcript panel, select all, and copy. It already carries timestamps.</p></div>
       <div class="card"><h3>With the extension</h3><p>Install it, open a video, and press <b>📜 Get transcript</b> in the Editor tab. It fills the transcript in for you, ready to copy.</p></div>
     </div>
-    <p class="note">The full skill, with all three prompts, is in the repo at <code>docs/toolkit/</code>.</p>
+    <p class="note">The combined prompt is also saved in the repo at <code>docs/toolkit/skill.md</code>, and the individual prompts sit next to it in <code>docs/toolkit/references/</code>.</p>
   </div>
 </section>
 
@@ -419,6 +514,22 @@ document.querySelectorAll('.copy').forEach(function(btn){
       var ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select();
       try { document.execCommand('copy'); } catch(e){} document.body.removeChild(ta); done();
     }
+  });
+});
+
+document.querySelectorAll('.download').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var el = document.getElementById(btn.getAttribute('data-download'));
+    if (!el) return;
+    var name = btn.getAttribute('data-filename') || 'prompt.txt';
+    var blob = new Blob([el.textContent], { type: 'text/markdown;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 4000);
+    var t = btn.textContent; btn.textContent = 'Saved!';
+    setTimeout(function(){ btn.textContent = t; }, 1600);
   });
 });
 </script>
