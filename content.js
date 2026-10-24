@@ -1604,7 +1604,7 @@ function createDashboard() {
                         if (sbRawTextarea) sbRawTextarea.value = sbRawText;
                         renderSponsorBlockCards(sbRawText);
 
-                        const vid = new URLSearchParams(window.location.search).get('v');
+                        const vid = getCurrentVideoId();
                         if (vid) {
                             chrome.storage.local.set({ ['sb_segments_' + vid]: sbRawText });
                         }
@@ -1872,7 +1872,7 @@ function createDashboard() {
         if (sbRawTextarea) sbRawTextarea.value = formatted;
         renderSponsorBlockCards(formatted);
 
-        const vid = new URLSearchParams(window.location.search).get('v');
+        const vid = getCurrentVideoId();
         if (vid) {
             chrome.storage.local.set({ ['sb_segments_' + vid]: formatted });
         }
@@ -2007,7 +2007,7 @@ function createDashboard() {
                 sbRawText = updated;
                 if (sbRawTextarea) sbRawTextarea.value = updated;
                 renderSponsorBlockCards(updated);
-                const vid = new URLSearchParams(window.location.search).get('v');
+                const vid = getCurrentVideoId();
                 if (vid) {
                     chrome.storage.local.set({ ['sb_segments_' + vid]: updated });
                 }
@@ -2096,7 +2096,7 @@ function createDashboard() {
         if (sbRawTextarea) sbRawTextarea.value = updated;
         renderSponsorBlockCards(updated);
 
-        const vid = new URLSearchParams(window.location.search).get('v');
+        const vid = getCurrentVideoId();
         if (vid) {
             chrome.storage.local.set({ ['sb_segments_' + vid]: updated });
         }
@@ -2190,7 +2190,7 @@ function createDashboard() {
         sbRawTextarea.oninput = () => {
             sbRawText = sbRawTextarea.value;
             renderSponsorBlockCards(sbRawText);
-            const vid = new URLSearchParams(window.location.search).get('v');
+            const vid = getCurrentVideoId();
             if (vid) {
                 chrome.storage.local.set({ ['sb_segments_' + vid]: sbRawText });
             }
@@ -2278,8 +2278,7 @@ function createDashboard() {
     }
 
     uploadSponsorBlockSegments = function(isAuto = false) {
-        const urlParams = new URLSearchParams(window.location.search);
-        const videoId = urlParams.get('v');
+        const videoId = getCurrentVideoId();
 
         if (!videoId) {
             setStatus('NO VIDEO ID', '#ff4b4b');
@@ -2391,7 +2390,7 @@ function createDashboard() {
     }
 
     document.getElementById('yt-sk-btn-save').onclick = () => {
-        const vid = new URLSearchParams(window.location.search).get("v");
+        const vid = getCurrentVideoId();
         if (!vid) return setStatus('NO VIDEO', '#ff4b4b');
         chrome.storage.local.get(['tursoUrl', 'tursoToken', 'autoComment'], res => {
             const shouldAutoComment = typeof res.autoComment === 'undefined' ? true : !!res.autoComment;
@@ -2573,7 +2572,7 @@ function updateStateFromText(text) {
             sbRawText = sponsorPart;
             if (sbRawTextarea) sbRawTextarea.value = sbRawText;
             renderSponsorBlockCards(sbRawText);
-            const vid = new URLSearchParams(window.location.search).get('v');
+            const vid = getCurrentVideoId();
             if (vid) {
                 chrome.storage.local.set({ ['sb_segments_' + vid]: sbRawText });
             }
@@ -2719,7 +2718,7 @@ function loadFromDBOrDefault(forceShowToast = false) {
             resolve(false);
             return;
         }
-        const vid = new URLSearchParams(window.location.search).get("v");
+        const vid = getCurrentVideoId();
         if (!vid) {
             loadFromDescription();
             resolve(timestamps.length > 0);
@@ -2732,7 +2731,7 @@ function loadFromDBOrDefault(forceShowToast = false) {
                 return;
             }
             // Guard: If user navigated away while getting storage
-            const currentVid = new URLSearchParams(window.location.search).get("v");
+            const currentVid = getCurrentVideoId();
             if (currentVid !== vid) {
                 resolve(false);
                 return;
@@ -2755,7 +2754,7 @@ function loadFromDBOrDefault(forceShowToast = false) {
                 }
             }, response => {
                 // Guard: If user navigated to another video while query was executing
-                const currentVidAfterQuery = new URLSearchParams(window.location.search).get("v");
+                const currentVidAfterQuery = getCurrentVideoId();
                 if (currentVidAfterQuery !== vid) {
                     resolve(false);
                     return;
@@ -3014,8 +3013,7 @@ let lastProcessedVideoId = null;
 async function checkAndTriggerAutoGeneration() {
     if (!isExtValid()) return;
     const video = document.querySelector('video');
-    const urlParams = new URLSearchParams(window.location.search);
-    const videoId = urlParams.get('v');
+    const videoId = getCurrentVideoId();
 
     if (!video || !videoId) return;
     if (videoId === lastProcessedVideoId || isAutoGenerating) return;
@@ -3046,7 +3044,7 @@ async function checkAndTriggerAutoGeneration() {
             }
             
             // Check if user changed the video while fetching transcript
-            const currentVidAfterTranscript = new URLSearchParams(window.location.search).get('v');
+            const currentVidAfterTranscript = getCurrentVideoId();
             if (currentVidAfterTranscript !== videoId) {
                 console.log(`Video changed from ${videoId} to ${currentVidAfterTranscript}. Aborting previous generation.`);
                 isAutoGenerating = false;
@@ -3065,7 +3063,7 @@ async function checkAndTriggerAutoGeneration() {
                 showToast('⚡ All-in-One: Scanning Chapters & SponsorBlock...', '⚡', 5000);
                 chrome.runtime.sendMessage({ action: 'generateAllInOne', text: transcript }, r => {
                     isAutoGenerating = false;
-                    const currentVidNow = new URLSearchParams(window.location.search).get('v');
+                    const currentVidNow = getCurrentVideoId();
                     if (currentVidNow !== videoId) {
                         // Background sync if user navigated away
                         if (res.autoSaveSync && res.tursoUrl && res.tursoToken && r && r.success && r.data?.chapters) {
@@ -3145,7 +3143,7 @@ async function checkAndTriggerAutoGeneration() {
                 isAutoGenerating = false;
 
                 // Check if user switched video while AI was responding
-                const currentVidNow = new URLSearchParams(window.location.search).get('v');
+                const currentVidNow = getCurrentVideoId();
                 if (currentVidNow !== videoId) {
                     console.log(`AI result received for old video ${videoId}, but user is now on ${currentVidNow}. Discarding UI update & comment.`);
                     // Still save to Turso DB in background so old video has timestamps ready for future!
@@ -3206,7 +3204,7 @@ async function checkAndTriggerAutoGeneration() {
                         // Sequential Step 2: Auto SponsorBlock Segment Analysis & Upload
                         if (saveRes.autoUploadSb) {
                             // Check if still on the same video before continuing
-                            if (new URLSearchParams(window.location.search).get('v') !== videoId) return;
+                            if (getCurrentVideoId() !== videoId) return;
 
                             const userId = (saveRes.sbUserId || '').trim();
                             if (!userId || userId.length < 32) {
@@ -3219,7 +3217,7 @@ async function checkAndTriggerAutoGeneration() {
                             await new Promise(resolve => setTimeout(resolve, 7000));
 
                             // Re-check navigation after delay
-                            if (new URLSearchParams(window.location.search).get('v') !== videoId) return;
+                            if (getCurrentVideoId() !== videoId) return;
 
                             showToast('Auto SB: Scanning removable segments...', '🚫', 4500);
                             const sbStatusObj = document.getElementById('yt-sk-status');
@@ -3229,7 +3227,7 @@ async function checkAndTriggerAutoGeneration() {
                             }
 
                             chrome.runtime.sendMessage({ action: 'analyzeRemovableSegments', text: transcript }, sbResp => {
-                                if (new URLSearchParams(window.location.search).get('v') !== videoId) return;
+                                if (getCurrentVideoId() !== videoId) return;
 
                                 if (sbResp && sbResp.success && sbResp.data) {
                                     const rawSbData = sbResp.data.trim();
@@ -3373,13 +3371,13 @@ async function onVideoPageLoaded() {
     const video = document.querySelector('video');
     if (!video) return;
 
-    const currentVid = new URLSearchParams(window.location.search).get('v');
+    const currentVid = getCurrentVideoId();
     if (!currentVid) return;
 
     const foundInDB = await loadFromDBOrDefault();
     if (!isExtValid()) return;
     // Verify user is still on the same video after DB check
-    if (new URLSearchParams(window.location.search).get('v') !== currentVid) return;
+    if (getCurrentVideoId() !== currentVid) return;
 
     if (foundInDB && timestamps.length > 0) {
         showToast(`Loaded ${timestamps.length} chapters from Cloud Database!`, '☁️', 3500);
