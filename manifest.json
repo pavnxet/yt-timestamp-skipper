@@ -1,14 +1,14 @@
 {
   "manifest_version": 3,
   "name": "YT Smart Chapters Pro",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "author": "pavnxet <yt-smart-chapters@pavnxet.com>",
   "description": "Smart YouTube chapters navigation, auto AI chapter generation, custom transcript editor, and SponsorBlock integration. Built with 💖 by pavnxet.",
   "homepage_url": "https://github.com/pavnxet/yt-timestamp-skipper",
-
   "permissions": [
     "storage",
-    "clipboardWrite"
+    "clipboardWrite",
+    "clipboardRead"
   ],
   "host_permissions": [
     "*://*.youtube.com/*",
@@ -40,8 +40,12 @@
         "*://*.youtube.com/*",
         "*://m.youtube.com/*"
       ],
-      "css": ["content.css"],
-      "js": ["content.js"],
+      "css": [
+        "content.css"
+      ],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_idle"
     }
   ],
@@ -50,7 +54,9 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["anime-wow.mp3"],
+      "resources": [
+        "anime-wow.mp3"
+      ],
       "matches": [
         "*://*.youtube.com/*",
         "*://m.youtube.com/*"

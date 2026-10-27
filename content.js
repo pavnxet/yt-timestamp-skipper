@@ -1,5 +1,5 @@
 /**
- * YT Smart Chapters Pro v2.0
+ * YT Smart Chapters Pro v3.2.0
  * made with 💖 by pavnxet
  * GitHub: https://github.com/pavnxet/yt-timestamp-skipper
  */
@@ -224,7 +224,7 @@ function createDashboard() {
                 <button class="yt-sk-btn yt-sk-action-btn-primary" id="yt-sk-btn-ai" title="Send the transcript to your AI provider and get chapter names back">✨ Write chapters</button>
             </div>
             <div class="yt-sk-editor-toolbar">
-                <button class="yt-sk-btn" id="yt-sk-btn-clean" title="Sort the lines and remove duplicates">🧹 Clean up</button>
+                <button class="yt-sk-btn" id="yt-sk-btn-paste" title="Paste your clipboard into the editor">📥 Paste</button>
                 <button class="yt-sk-btn" id="yt-sk-btn-copy" title="Copy the raw editor text">📋 Copy</button>
             </div>
 
@@ -483,6 +483,16 @@ function createDashboard() {
                     </div>
                     <label class="yt-sk-switch">
                         <input type="checkbox" id="yt-sk-auto-generate">
+                        <span class="yt-sk-slider"></span>
+                    </label>
+                </div>
+                <div class="yt-sk-toggle-row">
+                    <div class="yt-sk-toggle-text">
+                        <div class="yt-sk-toggle-title">Copy transcript to clipboard when a video opens</div>
+                        <div class="yt-sk-toggle-desc">Grabs the transcript automatically and shows a notification</div>
+                    </div>
+                    <label class="yt-sk-switch">
+                        <input type="checkbox" id="yt-sk-auto-copy-transcript">
                         <span class="yt-sk-slider"></span>
                     </label>
                 </div>
@@ -964,7 +974,7 @@ function createDashboard() {
         'openrouterKey', 'openrouterModel',
         'customUrl', 'customApiKey', 'customModel', 'customProviderName', 'customProfiles', 'customActiveProfileId', 'disableChunking',
         'shortcuts',
-        'autoComment', 'showMiniWidget', 'autoGenerate', 'autoSaveSync', 'autoUploadSb',
+        'autoComment', 'showMiniWidget', 'autoGenerate', 'autoSaveSync', 'autoUploadSb', 'autoCopyTranscript',
         'sbUserId', 'sbCategoryMode',
         'transcriptApiKey',
         'soundEnabled', 'soundUrl', 'soundVolume', 'soundCustomData'
@@ -979,6 +989,15 @@ function createDashboard() {
             autoGenToggle.checked = !!res.autoGenerate;
             autoGenToggle.onchange = () => {
                 chrome.storage.local.set({ autoGenerate: autoGenToggle.checked });
+            };
+        }
+
+        // Auto copy transcript on new video
+        const autoCopyToggle = document.getElementById('yt-sk-auto-copy-transcript');
+        if (autoCopyToggle) {
+            autoCopyToggle.checked = !!res.autoCopyTranscript;
+            autoCopyToggle.onchange = () => {
+                chrome.storage.local.set({ autoCopyTranscript: autoCopyToggle.checked });
             };
         }
 
@@ -1316,6 +1335,7 @@ function createDashboard() {
         const autoComment = document.getElementById('yt-sk-auto-comment').checked;
         const autoGenerate = document.getElementById('yt-sk-auto-generate')?.checked || false;
         const autoSaveSync = document.getElementById('yt-sk-auto-save-sync')?.checked || false;
+        const autoCopyTranscript = document.getElementById('yt-sk-auto-copy-transcript')?.checked || false;
         const miniChecked = document.getElementById('yt-sk-show-mini-widget')?.checked || false;
         const soundEnabled = document.getElementById('yt-sk-sound-enabled')?.checked ?? true;
         const soundUrl = document.getElementById('yt-sk-sound-url')?.value.trim() || '';
@@ -1327,6 +1347,7 @@ function createDashboard() {
             autoComment: autoComment,
             autoGenerate: autoGenerate,
             autoSaveSync: autoSaveSync,
+            autoCopyTranscript: autoCopyTranscript,
             showMiniWidget: miniChecked,
             soundEnabled: soundEnabled,
             soundUrl: soundUrl,
@@ -1386,23 +1407,21 @@ function createDashboard() {
         }
     };
 
-    document.getElementById('yt-sk-btn-clean').onclick = () => {
-        const text = textarea.value;
-        const tsRegex = /(?:\d{1,2}:)?\d{1,2}:\d{2}/g;
-        const matches = text.match(tsRegex);
-        if (!matches) return setStatus('NO TIMESTAMPS', '#ff4b4b');
-
-        const timeMap = new Map();
-        matches.forEach(ts => {
-            const sec = parseToSeconds(ts);
-            if (!timeMap.has(sec) || ts.length > timeMap.get(sec).length) timeMap.set(sec, ts);
-        });
-
-        const sorted = Array.from(timeMap.keys()).sort((a,b)=>a-b);
-        const cleanLines = sorted.map(sec => `${timeMap.get(sec)} Custom Marker`);
-        textarea.value = cleanLines.join('\n');
+    document.getElementById('yt-sk-btn-paste').onclick = async () => {
+        let txt = '';
+        try {
+            txt = await navigator.clipboard.readText();
+        } catch (e) {
+            setStatus('PASTE BLOCKED', '#ff4b4b');
+            alert('Could not read the clipboard.\nChrome may be blocking clipboard access for this page - click on the page once and try again, or press Ctrl+V inside the box.');
+            return;
+        }
+        if (!txt || !txt.trim()) return setStatus('CLIPBOARD EMPTY', '#ffb74d');
+        const start = textarea.selectionStart ?? textarea.value.length;
+        const end = textarea.selectionEnd ?? start;
+        textarea.setRangeText(txt, start, end, 'end');
         textarea.oninput();
-        setStatus('CLEANED');
+        setStatus('PASTED', '#00e676');
     };
 
     // --- Auto Fetch YouTube Transcript ---
@@ -3366,6 +3385,36 @@ async function checkAndTriggerAutoGeneration() {
     });
 }
 
+// --- Copy the transcript to the clipboard when a new video opens ---
+let autoCopiedVideoId = null;
+async function maybeAutoCopyTranscript() {
+    if (!isExtValid()) return;
+    const videoId = getCurrentVideoId();
+    if (!videoId || videoId === autoCopiedVideoId) return;
+
+    chrome.storage.local.get(['autoCopyTranscript'], async (res) => {
+        if (!res || !res.autoCopyTranscript || autoCopiedVideoId === videoId) return;
+        autoCopiedVideoId = videoId;
+        showToast('Fetching transcript to copy...', '\u{1F4CB}', 3000);
+
+        await new Promise(r => setTimeout(r, 1500)); // let the watch page finish rendering
+        let text = await extractYouTubeTranscriptWithTimestamps();
+        if (!text || !text.trim()) text = await fetchTranscriptViaApiFallback(videoId);
+
+        if (!text || !text.trim()) {
+            showToast('Transcript unavailable for this video', '\u26A0\uFE0F', 4000);
+            return;
+        }
+        try {
+            await navigator.clipboard.writeText(text);
+            showToast('Transcript copied to clipboard', '\u{1F4CB}', 4500);
+        } catch (e) {
+            console.warn('[YT Skipper] Clipboard write failed:', e);
+            showToast('Could not write to clipboard - click the page and retry', '\u26A0\uFE0F', 5000);
+        }
+    });
+}
+
 async function onVideoPageLoaded() {
     if (!isExtValid()) return;
     const video = document.querySelector('video');
@@ -3373,6 +3422,8 @@ async function onVideoPageLoaded() {
 
     const currentVid = getCurrentVideoId();
     if (!currentVid) return;
+
+    maybeAutoCopyTranscript();
 
     const foundInDB = await loadFromDBOrDefault();
     if (!isExtValid()) return;
@@ -3648,9 +3699,9 @@ async function extractYouTubeTranscriptWithTimestamps() {
         }
     }
 
-    // Check if transcript panel is already open and populated
-    const existingPanel = document.querySelector('ytd-engagement-panel-section-list-renderer[target-id="engagement-panel-searchable-transcript"] #content, ytm-engagement-panel-section-list-renderer[target-id="engagement-panel-searchable-transcript"], ytd-transcript-renderer, ytm-transcript-renderer');
-    if (existingPanel && existingPanel.querySelector('ytd-transcript-segment-renderer, ytm-transcript-segment-renderer, .transcript-segment')) {
+    // Check if a transcript panel is already open and populated (legacy or modern layout)
+    const existingPanel = findLoadedTranscriptPanel();
+    if (existingPanel) {
         const res = collectTranscriptSegments(existingPanel);
         restorePlaylist();
         if (res) return res;
@@ -3704,18 +3755,19 @@ async function extractYouTubeTranscriptWithTimestamps() {
         let attempts = 0;
         const intervalId = setInterval(() => {
             attempts++;
-            const panel = document.querySelector('ytd-engagement-panel-section-list-renderer[target-id="engagement-panel-searchable-transcript"] #content, ytm-engagement-panel-section-list-renderer[target-id="engagement-panel-searchable-transcript"], ytd-transcript-renderer, ytm-transcript-renderer');
+            // Modern/tabbed panels render segments as transcript-segment-view-model, and a
+            // hidden dummy panel with the same target-id is always present — skip hidden panels.
+            const panel = findLoadedTranscriptPanel();
             if (panel) {
-                // If segments loaded, return them!
-                if (panel.querySelector('ytd-transcript-segment-renderer, ytm-transcript-segment-renderer, .transcript-segment')) {
-                    clearInterval(intervalId);
-                    const result = collectTranscriptSegments(panel);
-                    resolve(result);
-                    return;
-                }
+                clearInterval(intervalId);
+                resolve(collectTranscriptSegments(panel));
+                return;
+            }
 
+            const container = getTranscriptPanelContainer();
+            if (container) {
                 // Check if YouTube displayed an explicit unavailable/empty state
-                const errorState = panel.querySelector('ytd-transcript-search-panel-renderer [id="message"], #empty-state, #error, ytd-message-renderer');
+                const errorState = container.querySelector('[id="message"], #empty-state, #error, ytd-message-renderer, yt-message-renderer');
                 if (errorState && errorState.textContent && errorState.textContent.trim()) {
                     console.warn("[Transcript] Native panel indicated transcript unavailable:", errorState.textContent.trim());
                     clearInterval(intervalId);
@@ -3744,24 +3796,85 @@ async function extractYouTubeTranscriptWithTimestamps() {
     return transcriptText;
 }
 
+// --- Transcript panel detection: legacy + modern/tabbed layouts ---
+const TRANSCRIPT_SEGMENT_SELECTOR = 'transcript-segment-view-model, .ytwTranscriptSegmentViewModelHost, ytd-transcript-segment-renderer, ytm-transcript-segment-renderer, .transcript-segment';
+const TRANSCRIPT_TIME_RE = /^\d+:\d{2}(:\d{2})?$/;
+
+function isTranscriptPanelVisible(panel) {
+    if (panel.getAttribute('visibility') === 'ENGAGEMENT_PANEL_VISIBILITY_HIDDEN') return false;
+    if (panel.offsetParent === null) return false;
+    return true;
+}
+
+// Visible panel that looks like the transcript panel, segments loaded or not
+function getTranscriptPanelContainer() {
+    const panels = document.querySelectorAll('ytd-engagement-panel-section-list-renderer, ytm-engagement-panel-section-list-renderer');
+    for (const panel of panels) {
+        if (!isTranscriptPanelVisible(panel)) continue;
+        const hasModernContainer = panel.querySelector('[data-target-id="PAmodern_transcript_view"], [data-target-id*="transcript"]');
+        const hasSearchBox = panel.querySelector('textarea[aria-label="Search transcript"], textarea[placeholder="Search transcript"], input[placeholder="Search transcript"]');
+        if (hasModernContainer || hasSearchBox || panel.querySelectorAll(TRANSCRIPT_SEGMENT_SELECTOR).length > 0) return panel;
+    }
+    return document.querySelector('ytd-transcript-renderer, ytm-transcript-renderer');
+}
+
+// Visible transcript panel whose segments have actually rendered
+function findLoadedTranscriptPanel() {
+    const panel = getTranscriptPanelContainer();
+    if (panel && panel.querySelectorAll(TRANSCRIPT_SEGMENT_SELECTOR).length > 0) return panel;
+    return null;
+}
+
+function extractTranscriptSegment(seg) {
+    const isModern = seg.tagName.toLowerCase() === 'transcript-segment-view-model' || seg.classList.contains('ytwTranscriptSegmentViewModelHost');
+    const timeEl = isModern
+        ? seg.querySelector('.ytwTranscriptSegmentViewModelTimestamp')
+        : seg.querySelector('.segment-timestamp, .transcript-segment-timestamp');
+    const textEl = isModern
+        ? seg.querySelector('.ytAttributedStringHost[role="text"], span[role="text"], .ytAttributedStringHost')
+        : seg.querySelector('.segment-text, .transcript-segment-text');
+
+    let timestamp = timeEl ? timeEl.textContent.trim() : '';
+    if (!timestamp) {
+        for (const child of seg.querySelectorAll('div, span')) {
+            const t = child.textContent.trim();
+            if (TRANSCRIPT_TIME_RE.test(t)) { timestamp = t; break; }
+        }
+    }
+    return { timestamp, text: textEl ? textEl.textContent.trim() : '' };
+}
+
+// Last resort: pair timecode leaf nodes with the text node that follows them
+function fallbackWalkTranscript(panel) {
+    const out = [];
+    const walker = document.createTreeWalker(panel, NodeFilter.SHOW_ELEMENT);
+    let currentTimestamp = '', node;
+    while ((node = walker.nextNode())) {
+        if (node.children.length > 0) continue;
+        const t = node.textContent.trim();
+        if (!t) continue;
+        if (TRANSCRIPT_TIME_RE.test(t)) {
+            currentTimestamp = t;
+        } else if (node.matches('span[role="text"], .ytAttributedStringHost, .segment-text, .transcript-segment-text') ||
+                   (currentTimestamp && t.length > 1 && !node.closest('#header, form, button'))) {
+            out.push(currentTimestamp ? currentTimestamp + ' ' + t : t);
+            currentTimestamp = '';
+        }
+    }
+    return out.length ? out.join('\n') : null;
+}
+
 function collectTranscriptSegments(panel) {
     if (!panel) return null;
-    const segments = panel.querySelectorAll('ytd-transcript-segment-renderer, ytm-transcript-segment-renderer, .transcript-segment');
+    const segments = panel.querySelectorAll(TRANSCRIPT_SEGMENT_SELECTOR);
     if (!segments || segments.length === 0) return null;
 
     const lines = [];
     segments.forEach(seg => {
-        const timeEl = seg.querySelector('.segment-timestamp, .transcript-segment-timestamp');
-        const textEl = seg.querySelector('.segment-text, .transcript-segment-text');
-        if (timeEl && textEl) {
-            const timeStr = timeEl.textContent.trim();
-            const textStr = textEl.textContent.trim();
-            if (timeStr && textStr) {
-                lines.push(`${timeStr} ${textStr}`);
-            }
-        }
+        const { timestamp, text } = extractTranscriptSegment(seg);
+        if (text) lines.push(timestamp ? timestamp + ' ' + text : text);
     });
 
+    if (lines.length === 0) return fallbackWalkTranscript(panel);
     return lines.join('\n');
 }
-
