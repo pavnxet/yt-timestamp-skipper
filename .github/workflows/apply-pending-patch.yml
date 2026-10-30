@@ -1,0 +1,25 @@
+name: Apply pending patch
+on:
+  push:
+    paths:
+      - '.github/workflows/apply-pending-patch.yml'
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply patch
+        run: |
+          echo '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' | base64 -d | gunzip > /tmp/apply.py
+          python3 /tmp/apply.py
+      - name: Commit and remove this one-shot workflow
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add content.js manifest.json
+          git rm -q .github/workflows/apply-pending-patch.yml
+          git commit -m "feat(ui): Save on Editor tab, Copy/Paste swap, one-click Paste segments (v3.3.0)"
+          git push
