@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "YT Smart Chapters Pro",
-  "version": "3.2.0",
+  "version": "3.3.0",
   "author": "pavnxet <yt-smart-chapters@pavnxet.com>",
   "description": "Smart YouTube chapters navigation, auto AI chapter generation, custom transcript editor, and SponsorBlock integration. Built with 💖 by pavnxet.",
   "homepage_url": "https://github.com/pavnxet/yt-timestamp-skipper",

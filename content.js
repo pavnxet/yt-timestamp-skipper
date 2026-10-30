@@ -1,5 +1,5 @@
 /**
- * YT Smart Chapters Pro v3.2.0
+ * YT Smart Chapters Pro v3.3.0
  * made with 💖 by pavnxet
  * GitHub: https://github.com/pavnxet/yt-timestamp-skipper
  */
@@ -224,8 +224,9 @@ function createDashboard() {
                 <button class="yt-sk-btn yt-sk-action-btn-primary" id="yt-sk-btn-ai" title="Send the transcript to your AI provider and get chapter names back">✨ Write chapters</button>
             </div>
             <div class="yt-sk-editor-toolbar">
-                <button class="yt-sk-btn" id="yt-sk-btn-paste" title="Paste your clipboard into the editor">📥 Paste</button>
                 <button class="yt-sk-btn" id="yt-sk-btn-copy" title="Copy the raw editor text">📋 Copy</button>
+                <button class="yt-sk-btn" id="yt-sk-btn-paste" title="Paste your clipboard into the editor">📥 Paste</button>
+                <button class="yt-sk-btn yt-sk-btn-success" id="yt-sk-btn-save-editor" title="Save these chapters to your Turso cloud database">☁️ Save</button>
             </div>
 
             <div class="yt-sk-textarea-container">
@@ -244,21 +245,8 @@ function createDashboard() {
 
             <div class="yt-sk-sb-actions-bar">
                 <button class="yt-sk-btn yt-sk-action-btn-primary" id="yt-sk-btn-scan-removable" title="Let the AI read the transcript and mark the removable segments">🤖 Scan with AI</button>
-                <button class="yt-sk-btn" id="yt-sk-sb-btn-toggle-paste" title="Paste a segment table or [MM:SS]-[MM:SS] intervals you already have">📋 Quick paste</button>
+                <button class="yt-sk-btn" id="yt-sk-sb-btn-paste-now" title="Read the clipboard and import the segments straight away">📥 Paste segments</button>
                 <button class="yt-sk-btn" id="yt-sk-sb-btn-toggle-manual" title="Add one segment by hand (hotkey Alt+S)">➕ Add manually</button>
-            </div>
-
-            <!-- Quick Paste drawer -->
-            <div class="yt-sk-sb-drawer" id="yt-sk-sb-paste-drawer" style="display:none;">
-                <div class="yt-sk-sb-drawer-header">
-                    <span>📋 Quick paste</span>
-                    <button class="yt-sk-drawer-close" id="yt-sk-sb-btn-close-paste" title="Close">✕</button>
-                </div>
-                <textarea id="yt-sk-sb-quick-paste-input" class="yt-sk-turso-input yt-sk-drawer-textarea" placeholder="| 1 | 00:00 | 00:10 | INTRO | Greeting |&#10;or [04:14]-[04:31] SELFPROMO"></textarea>
-                <div class="yt-sk-btn-row">
-                    <button class="yt-sk-btn yt-sk-btn-primary" id="yt-sk-sb-btn-apply-paste">⚡ Import segments</button>
-                    <button class="yt-sk-btn" id="yt-sk-sb-btn-paste-clipboard">📋 Paste clipboard</button>
-                </div>
             </div>
 
             <!-- Manual segment drawer -->
@@ -326,7 +314,7 @@ function createDashboard() {
                 <div class="yt-sk-empty-placeholder">
                     <div class="yt-sk-empty-icon">🚫</div>
                     <div class="yt-sk-empty-title">Nothing detected yet</div>
-                    <div class="yt-sk-empty-desc">Click <b>🤖 Scan with AI</b>, or add segments with <b>📋 Quick paste</b> / <b>➕ Add manually</b>.</div>
+                    <div class="yt-sk-empty-desc">Click <b>🤖 Scan with AI</b>, or add segments with <b>📥 Paste segments</b> / <b>➕ Add manually</b>.</div>
                 </div>
             </div>
 
@@ -652,19 +640,6 @@ function createDashboard() {
     const btnClose = document.getElementById('yt-sk-btn-close');
     const btnMin = document.getElementById('yt-sk-btn-min');
     const header = document.getElementById('yt-sk-header');
-
-    // Toggle Paste Drawer
-    if (btnTogglePaste && pasteDrawer) {
-        btnTogglePaste.onclick = () => {
-            const isHidden = pasteDrawer.style.display === 'none';
-            pasteDrawer.style.display = isHidden ? 'flex' : 'none';
-            if (manualDrawer) manualDrawer.style.display = 'none';
-            if (isHidden && sbQuickPasteInput) sbQuickPasteInput.focus();
-        };
-    }
-    if (btnClosePaste && pasteDrawer) {
-        btnClosePaste.onclick = () => pasteDrawer.style.display = 'none';
-    }
 
     // Toggle Manual Drawer
     if (btnToggleManual && manualDrawer) {
@@ -1914,7 +1889,7 @@ function createDashboard() {
         if (!rawText || !rawText.trim() || rawText.includes('NO REMOVABLE SEGMENTS FOUND')) {
             const emptyHtml = `
                 <div class="yt-sk-empty-placeholder">
-                    ${rawText && rawText.includes('NO REMOVABLE') ? '✅ No removable segments found in video.' : 'No segments detected yet.<br>Click <b>🤖 AI Scan</b> or <b>📋 Quick Paste</b> above.'}
+                    ${rawText && rawText.includes('NO REMOVABLE') ? '✅ No removable segments found in video.' : 'No segments detected yet.<br>Click <b>🤖 AI Scan</b> or <b>📥 Paste segments</b> above.'}
                 </div>
             `;
             sbCardsContainer.innerHTML = emptyHtml;
@@ -1985,7 +1960,7 @@ function createDashboard() {
             titleEl.textContent = 'Nothing detected yet';
             const descEl = document.createElement('div');
             descEl.className = 'yt-sk-empty-desc';
-            descEl.textContent = 'Click "Scan with AI", or add segments with Quick paste / Add manually.';
+            descEl.textContent = 'Click "Scan with AI", or add segments with Paste segments / Add manually.';
             emptyEl.appendChild(iconEl);
             emptyEl.appendChild(titleEl);
             emptyEl.appendChild(descEl);
@@ -2165,42 +2140,23 @@ function createDashboard() {
         };
     }
 
-    // Bind Quick Paste & Parse Segments Box Buttons
-    if (sbBtnApplyPaste) {
-        sbBtnApplyPaste.onclick = () => {
-            const val = sbQuickPasteInput?.value || '';
-            applyPastedSponsorSegments(val, false);
-        };
-    }
-
-    if (sbBtnPasteClipboard) {
-        sbBtnPasteClipboard.onclick = async () => {
+    // One click: read the clipboard and import the segments straight away
+    const btnPasteSegments = document.getElementById('yt-sk-sb-btn-paste-now');
+    if (btnPasteSegments) {
+        btnPasteSegments.onclick = async () => {
+            let text = '';
             try {
-                const text = await navigator.clipboard.readText();
-                if (text && text.trim()) {
-                    if (sbQuickPasteInput) sbQuickPasteInput.value = text;
-                    applyPastedSponsorSegments(text, false);
-                } else {
-                    showToast('Clipboard is empty or does not contain text.', '⚠️', 3000);
-                }
-            } catch (err) {
-                alert('Clipboard access notice: ' + err.message + '\nYou can also paste directly into the box with Ctrl+V.');
+                text = await navigator.clipboard.readText();
+            } catch (e) {
+                setStatus('PASTE BLOCKED', '#ff4b4b');
+                alert('Could not read the clipboard. Click on the page once and try again, or paste into the Raw view and edit there.');
+                return;
             }
-        };
-    }
-
-    if (sbQuickPasteInput) {
-        sbQuickPasteInput.onpaste = () => {
-            setTimeout(() => {
-                const val = sbQuickPasteInput.value.trim();
-                if (val) {
-                    const found = parseSponsorSegmentsFromText(val);
-                    if (found.length > 0) {
-                        setStatus(`DETECTED ${found.length} SEGMENTS`, '#00f2fe');
-                        showToast(`Detected ${found.length} segments! Click "Import Segments".`, '⚡', 3500);
-                    }
-                }
-            }, 50);
+            if (!text || !text.trim()) {
+                showToast('Clipboard is empty - copy a segment table first.', '⚠️', 3000);
+                return;
+            }
+            applyPastedSponsorSegments(text, false);
         };
     }
 
@@ -2344,7 +2300,7 @@ function createDashboard() {
 
             if (!rawText || rawText.includes('NO REMOVABLE SEGMENTS FOUND')) {
                 setStatus('NO SEGMENTS', '#ff4b4b');
-                if (!isAuto) alert('No removable segments found to upload.\nPaste segments in Quick Paste or click AI Scan Segments first.');
+                if (!isAuto) alert('No removable segments found to upload.\nPaste your segments first or click AI Scan Segments.');
                 return;
             }
 
@@ -2443,6 +2399,9 @@ function createDashboard() {
             });
         });
     };
+
+    const btnSaveEditor = document.getElementById('yt-sk-btn-save-editor');
+    if (btnSaveEditor) btnSaveEditor.onclick = () => document.getElementById('yt-sk-btn-save').click();
 
     document.getElementById('yt-sk-btn-load').onclick = () => {
         const status = loadFromDBOrDefault(true);
