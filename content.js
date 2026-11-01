@@ -1,5 +1,5 @@
 /**
- * YT Smart Chapters Pro v3.3.0
+ * YT Smart Chapters Pro v3.4.0
  * made with 💖 by pavnxet
  * GitHub: https://github.com/pavnxet/yt-timestamp-skipper
  */
@@ -26,7 +26,7 @@ function escapeHtml(str) {
 let timestamps = [];
 let titles = [];
 let allParsedChapters = []; // [{t: number, title: string, category: 'ques'|'ans'|'explain'|'other'}]
-let currentChapterFilter = 'all'; // 'all' | 'ques' | 'ans' | 'explain'
+let currentChapterFilter = ['all']; // multi-select: ['all'] or any of 'ques' | 'ans' | 'explain'
 let lastActiveIdx = -1;
 let currentMode = 'normal';
 let currentRawText = '';
@@ -193,10 +193,10 @@ function createDashboard() {
             </div>
 
             <div class="yt-sk-filter-chips" id="yt-sk-filter-chips">
-                <button class="yt-sk-chip active" data-filter="all" title="Show every timestamp">All</button>
-                <button class="yt-sk-chip" data-filter="ques" title="Show only where each question starts">❓ Questions</button>
-                <button class="yt-sk-chip" data-filter="ans" title="Show only where the correct option is revealed">🎯 Answers</button>
-                <button class="yt-sk-chip" data-filter="explain" title="Show only where the explanation starts">💡 Explain</button>
+                <button class="yt-sk-chip active" data-filter="all" title="Every timestamp — resets the selection">All</button>
+                <button class="yt-sk-chip" data-filter="ques" title="Question start — click to add or remove it from the skip list">❓ Questions</button>
+                <button class="yt-sk-chip" data-filter="ans" title="Correct option reveal — click to add or remove it from the skip list">🎯 Answers</button>
+                <button class="yt-sk-chip" data-filter="explain" title="Explanation start — click to add or remove it from the skip list">💡 Explain</button>
             </div>
 
             <div class="yt-sk-list" id="yt-sk-list">
@@ -2408,12 +2408,9 @@ function createDashboard() {
         if (status === 'fetching') setStatus('LOADING...');
     };
 
-    // Filter Chips Event Listeners
+    // Filter chips toggle, so several sections can be on at once
     dashboard.querySelectorAll('.yt-sk-chip').forEach(chip => {
-        chip.onclick = () => {
-            const filterType = chip.getAttribute('data-filter');
-            applyChapterFilter(filterType);
-        };
+        chip.onclick = () => toggleChapterFilter(chip.getAttribute('data-filter'));
     });
 
     window.refreshDashboard = function() {
@@ -2497,32 +2494,46 @@ function formatTime(sec) {
     return `${h?h+':':''}${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
 }
 
+// Toggle one section on or off. Several can stay on, e.g. Questions + Answers only.
+function toggleChapterFilter(filterType) {
+    if (!filterType || filterType === 'all') {
+        currentChapterFilter = ['all'];
+    } else {
+        const picked = currentChapterFilter.filter(f => f !== 'all');
+        currentChapterFilter = picked.includes(filterType)
+            ? picked.filter(f => f !== filterType)
+            : picked.concat(filterType);
+        if (!currentChapterFilter.length) currentChapterFilter = ['all'];
+    }
+    applyChapterFilter(currentChapterFilter);
+}
+
 function applyChapterFilter(filterType) {
-    currentChapterFilter = filterType || 'all';
-    
+    currentChapterFilter = Array.isArray(filterType) ? filterType : [filterType || 'all'];
+    if (!currentChapterFilter.length) currentChapterFilter = ['all'];
+    const showAll = currentChapterFilter.includes('all');
+
     // Update chip active classes
     const chipContainer = document.getElementById('yt-sk-filter-chips');
     if (chipContainer) {
         chipContainer.querySelectorAll('.yt-sk-chip').forEach(btn => {
-            if (btn.getAttribute('data-filter') === currentChapterFilter) {
-                btn.classList.add('active');
-            } else {
-                btn.classList.remove('active');
-            }
+            const f = btn.getAttribute('data-filter');
+            btn.classList.toggle('active', showAll ? f === 'all' : currentChapterFilter.includes(f));
         });
     }
 
     // Filter items
     let filtered = [];
-    if (currentChapterFilter === 'all') {
+    if (showAll) {
         filtered = [...allParsedChapters];
     } else {
         filtered = allParsedChapters.filter(item => {
-            if (item.category === currentChapterFilter) return true;
+            if (currentChapterFilter.includes(item.category)) return true;
             // Also handle merged categories e.g. 'ques & ans' or title matches
-            if (currentChapterFilter === 'ques' && item.title.toLowerCase().includes('question')) return true;
-            if (currentChapterFilter === 'ans' && (item.title.toLowerCase().includes('correct option') || item.title.toLowerCase().includes('answer start'))) return true;
-            if (currentChapterFilter === 'explain' && item.title.toLowerCase().includes('explanation')) return true;
+            const lower = item.title.toLowerCase();
+            if (currentChapterFilter.includes('ques') && lower.includes('question')) return true;
+            if (currentChapterFilter.includes('ans') && (lower.includes('correct option') || lower.includes('answer start'))) return true;
+            if (currentChapterFilter.includes('explain') && lower.includes('explanation')) return true;
             return false;
         });
     }
