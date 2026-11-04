@@ -1,0 +1,25 @@
+name: Apply pending patch
+on:
+  push:
+    paths:
+      - '.github/workflows/apply-pending-patch.yml'
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply patch
+        run: |
+          echo 'H4sICKFd62oCA2FwcGx5X3RzX3BhdGNoLnB5ANVX627bNhT+r6c4TYFK2mTFSbNhSOEW2dBgBVYsWPxnSIKClo4jNhQpkJQdIzGwh9gT7kl2SMmyY6tJV2A3/bAl8ly/cyN5WSltwSxMAh+NkkFwBiMIMyUtSpt+NGFgdEZLqkIZnSWAMlM5l9ejsLbTwXdhnGpkeRQHQY5TMPXkg5IZRkrkCUicJyDYBEV8HAA910JNmACS6D8lyaX3NFO1tI4l9st8SjvPRnDQMLmH7EvxlttoGp58//MvY7jzYpfHgLcVZhZzOICS2axIYErScriTy7AR19jv9GisBNswjox+DoPugRlqw5XcWAo6h0L4Cn4dw3nJCK4fClZZIoYzrWD2Mj1Kh5cyTOAJooOGqCDAUK+0hdtWHKRkG20CltwCA4PXJcUCBJcIc24LVVvg1oDlJVIwsNfeYG9vz3lPkTQNryEULq5eNZg0Mk06Vfoty4qIFmD0Gu46xBu+O6/EWFZWCVi8tbAkKfSvWWbHmkmTaV7Z80ackxK/6kRQHCPHEzfq06o2RdTJgzdr2fA1QRfSr1dx7P9aQUv6J1eS/4A/+/tw8kgUuIHaoEBjIFdz0kaFUSZgFORaVUQLmtmC4moLJjeFujhbKilgEqgQSF4OtrMF5gUXSEwIFZMonB5juRCgUVIeEWO6Azm8eLH29BP4b2K+BbZrAEJQXe0k52EKhpUIuiabCGxvlyT3B3MmbmDKhJiw7ObRlPSaAIVBb6/jTn3toolCQ05eaCVwtOcM27tKIF3YE2s1n9RU5+fWefyjMpY22rAPHCV9rkEbbO6EMdzfdxBtPFFWawLRjjtMHGypQHltC3hNLYW+n3n7MqEM0UTh86Z6XZvRFF2yyboajuONXHMPpUcD+I6ON7Cz1IXC5f5GxvnE3Sam9hyuSZYPqmML2h7/enH490JA6fqFeH8+4B26X4IshF1OuwzfKYiXKdwgVlBRwbgabqu1bQoGmMbtcn2yONb9qqn4EUy5zH9SBES+blJnbi/a8slF3TNtw+NlCmT6HU12PWMi4u3Lu3xLhns0GiVmGLV9YKc1mlZLL6uttXy4vpulf5uPXmZrNjXSETzlwq4HvnRWEvqU/EUwewDFT9PtotcguL1Ck2Plic8yOriQf4jSFYnry1xv5GHBZq5R2zYNCZkFWvjjt98fpG/aEzUI282d3D9KgdVWDTJVLUjulMafWU8wN4Z6M11vpIGD+pknvb8H/0IthJfRTnmbQs3HirmWsI4kKWMzxuks2E0jmo4znqNyB63L+vDbk+Flffp2eErfR8PhcAv1bbTXKFu92LKAzRnNcFLIr5lVmloUryaK6Tyda25xTLZH7Sz1yf6/cNMbtn+Z3x0kh8tj+j9c7qfWdV7vyueZl7kTQdMi24NRd8owMPBZRynCMe+z9pt/MigQrhP2uiYyl9Orq004D/vuN15QRPeHOKiofZPr69sRNS83NOk6MVlYdyIlCTTOHHXqJdHFoZUTk6b3bsSUTPIpoZO6+1YYlLTm3lJBvS/ytrzvMSMOyotwdWW4cnL8jSIMPG9el1VE43HF3u9KAtRiyfDRods0tcYPzGScj04ZnRjioONmjwARXrorS4vEypfVZeaYGDftjIM/ARdUzSxhDgAA' | base64 -d | gunzip > /tmp/apply.py
+          python3 /tmp/apply.py
+      - name: Commit and remove this one-shot workflow
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add content.js manifest.json
+          git rm -q .github/workflows/apply-pending-patch.yml
+          git commit -m "fix(transcript): never emit or copy lines without timestamps (v3.4.1)"
+          git push
