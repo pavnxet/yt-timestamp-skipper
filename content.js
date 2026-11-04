@@ -1,5 +1,5 @@
 /**
- * YT Smart Chapters Pro v3.4.0
+ * YT Smart Chapters Pro v3.4.1
  * made with 💖 by pavnxet
  * GitHub: https://github.com/pavnxet/yt-timestamp-skipper
  */
@@ -3375,6 +3375,10 @@ async function maybeAutoCopyTranscript() {
             showToast('Transcript unavailable for this video', '\u26A0\uFE0F', 4000);
             return;
         }
+        if (!/\d{1,2}:\d{2}/.test(text)) {
+            showToast('Transcript came back without timestamps - not copied', '\u26A0\uFE0F', 4500);
+            return;
+        }
         try {
             await navigator.clipboard.writeText(text);
             showToast('Transcript copied to clipboard', '\u{1F4CB}', 4500);
@@ -3729,9 +3733,13 @@ async function extractYouTubeTranscriptWithTimestamps() {
             // hidden dummy panel with the same target-id is always present — skip hidden panels.
             const panel = findLoadedTranscriptPanel();
             if (panel) {
-                clearInterval(intervalId);
-                resolve(collectTranscriptSegments(panel));
-                return;
+                const collected = collectTranscriptSegments(panel);
+                if (collected) {
+                    clearInterval(intervalId);
+                    resolve(collected);
+                    return;
+                }
+                // Segments are on screen but their timecodes have not rendered yet — keep polling.
             }
 
             const container = getTranscriptPanelContainer();
@@ -3825,9 +3833,10 @@ function fallbackWalkTranscript(panel) {
         if (!t) continue;
         if (TRANSCRIPT_TIME_RE.test(t)) {
             currentTimestamp = t;
-        } else if (node.matches('span[role="text"], .ytAttributedStringHost, .segment-text, .transcript-segment-text') ||
-                   (currentTimestamp && t.length > 1 && !node.closest('#header, form, button'))) {
-            out.push(currentTimestamp ? currentTimestamp + ' ' + t : t);
+        } else if (currentTimestamp &&
+                   (node.matches('span[role="text"], .ytAttributedStringHost, .segment-text, .transcript-segment-text') ||
+                    (t.length > 1 && !node.closest('#header, form, button')))) {
+            out.push(currentTimestamp + ' ' + t);
             currentTimestamp = '';
         }
     }
@@ -3842,7 +3851,9 @@ function collectTranscriptSegments(panel) {
     const lines = [];
     segments.forEach(seg => {
         const { timestamp, text } = extractTranscriptSegment(seg);
-        if (text) lines.push(timestamp ? timestamp + ' ' + text : text);
+        // A line without its timecode is useless downstream, so drop it rather than
+        // emitting an untimed transcript while the panel is still rendering.
+        if (text && timestamp) lines.push(timestamp + ' ' + text);
     });
 
     if (lines.length === 0) return fallbackWalkTranscript(panel);
