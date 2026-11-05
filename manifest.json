@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "YT Smart Chapters Pro",
-  "version": "3.4.1",
+  "version": "3.5.0",
   "author": "pavnxet <yt-smart-chapters@pavnxet.com>",
   "description": "Smart YouTube chapters navigation, auto AI chapter generation, custom transcript editor, and SponsorBlock integration. Built with 💖 by pavnxet.",
   "homepage_url": "https://github.com/pavnxet/yt-timestamp-skipper",
@@ -12,6 +12,7 @@
   ],
   "host_permissions": [
     "*://*.youtube.com/*",
+    "*://*.youtube-nocookie.com/*",
     "https://*.turso.io/*",
     "https://openrouter.ai/*",
     "https://claude.aikit.club/*",
@@ -47,6 +48,33 @@
         "content.js"
       ],
       "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://*.youtube.com/embed/*",
+        "*://*.youtube-nocookie.com/embed/*"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "all_frames": true,
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "exclude_matches": [
+        "*://*.youtube.com/*",
+        "*://*.youtube-nocookie.com/*"
+      ],
+      "js": [
+        "embed-launcher.js"
+      ],
+      "run_at": "document_idle"
     }
   ],
   "background": {
@@ -59,7 +87,8 @@
       ],
       "matches": [
         "*://*.youtube.com/*",
-        "*://m.youtube.com/*"
+        "*://m.youtube.com/*",
+        "*://*.youtube-nocookie.com/*"
       ]
     }
   ]

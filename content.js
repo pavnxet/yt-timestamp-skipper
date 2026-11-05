@@ -1,5 +1,5 @@
 /**
- * YT Smart Chapters Pro v3.4.1
+ * YT Smart Chapters Pro v3.5.0
  * made with 💖 by pavnxet
  * GitHub: https://github.com/pavnxet/yt-timestamp-skipper
  */
@@ -12,6 +12,16 @@ const isExtValid = () => {
         return false;
     }
 };
+
+// Embed players (/embed/ID on youtube.com or youtube-nocookie.com) have no watch page:
+// no description, no transcript panel. The panel still runs inside the frame, and the
+// host page asks it to open through postMessage because it cannot reach in itself.
+const isEmbeddedPlayer = () =>
+    /^\/(embed|v)\//.test(location.pathname) || location.hostname.endsWith('youtube-nocookie.com');
+
+window.addEventListener('message', (e) => {
+    if (e.data && e.data.type === 'YTSK_TOGGLE_PANEL') toggleDashboard();
+});
 
 function escapeHtml(str) {
     if (str === null || str === undefined) return '';
@@ -159,6 +169,11 @@ function createDashboard() {
     if (dashboard) return;
     dashboard = document.createElement('div');
     dashboard.id = 'yt-skipper-dashboard';
+    if (isEmbeddedPlayer()) {
+        // Embeds are often narrower than the panel's 440px default
+        dashboard.style.width = 'min(440px, calc(100vw - 16px))';
+        dashboard.style.right = '8px';
+    }
     dashboard.innerHTML = `
         <div class="yt-sk-header" id="yt-sk-header" title="Double-click to minimize or expand">
             <div class="yt-sk-header-top">
@@ -3661,6 +3676,11 @@ async function fetchTranscriptViaApiFallback(videoId) {
 // --- Autonomous YouTube Transcript Extraction with Timestamps ---
 async function extractYouTubeTranscriptWithTimestamps() {
     console.log("Starting autonomous transcript extraction...");
+
+    // An embed has no transcript panel or description to scrape — use the API directly.
+    if (isEmbeddedPlayer()) {
+        return (await fetchTranscriptViaApiFallback(getCurrentVideoId())) || null;
+    }
 
     // Temporarily minimize conflict with playlist panels
     const playlistPanel = document.querySelector('ytd-playlist-panel-renderer#playlist');
