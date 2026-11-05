@@ -1,5 +1,5 @@
 /**
- * YT Smart Chapters Pro v3.5.0
+ * YT Smart Chapters Pro v3.5.1
  * made with 💖 by pavnxet
  * GitHub: https://github.com/pavnxet/yt-timestamp-skipper
  */
@@ -3058,6 +3058,10 @@ async function checkAndTriggerAutoGeneration() {
             if (!transcript || !transcript.trim()) {
                 console.log("Auto Timestamp Maker: No transcript found for this video.");
                 isAutoGenerating = false;
+                lastProcessedVideoId = null; // let the next load try again
+                const statusEl = document.getElementById('yt-sk-status');
+                if (statusEl) { statusEl.textContent = 'NO TRANSCRIPT'; statusEl.style.color = '#ff4b4b'; }
+                showToast('No transcript found for this video, so chapters cannot be generated.', '⚠️', 6000);
                 return;
             }
 
@@ -3404,6 +3408,14 @@ async function maybeAutoCopyTranscript() {
     });
 }
 
+// The player can appear well after document_idle — an embed boots on its own schedule and
+// never fires a navigation event, so a single attempt would leave the panel empty forever.
+function whenVideoReady(fn, attempts = 40, interval = 500) {
+    if (document.querySelector('video')) { fn(); return; }
+    if (attempts <= 0) return;
+    setTimeout(() => whenVideoReady(fn, attempts - 1, interval), interval);
+}
+
 async function onVideoPageLoaded() {
     if (!isExtValid()) return;
     const video = document.querySelector('video');
@@ -3435,7 +3447,7 @@ function handleNavigationChange() {
         lastUrl = window.location.href;
         resetVideoState();
         lastProcessedVideoId = null; // Allow auto-generation for the new video
-        setTimeout(onVideoPageLoaded, 1000);
+        whenVideoReady(() => setTimeout(onVideoPageLoaded, 1000));
     }
     setupMobileToggleButton();
     syncDashboardTheme();
@@ -3461,7 +3473,7 @@ let mobileToggleBtn = null;
 
 createMiniWidget();
 setupMobileToggleButton();
-setTimeout(onVideoPageLoaded, 1200);
+whenVideoReady(() => setTimeout(onVideoPageLoaded, 800));
 
 function setupMobileToggleButton() {
     if (!document.body) return;
