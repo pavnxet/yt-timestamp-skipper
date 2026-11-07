@@ -1,5 +1,5 @@
 /**
- * YT Smart Chapters Pro v3.5.1
+ * YT Smart Chapters Pro v3.5.2
  * made with 💖 by pavnxet
  * GitHub: https://github.com/pavnxet/yt-timestamp-skipper
  */
@@ -3520,8 +3520,8 @@ function formatCommentText(rawText) {
                     const matchAns = (ansStart && ansStart !== 'N/A') ? ansStart.match(tsRegex) : null;
                     const matchOpt = (optTs && optTs !== 'N/A') ? optTs.match(tsRegex) : null;
 
-                    // Choose answer timestamp: prefer Answer Start, fallback to Correct Option
-                    const ansTimeMatch = matchAns || matchOpt;
+                    // Prefer the correct-option reveal; fall back to the explanation start
+                    const ansTimeMatch = matchOpt || matchAns;
 
                     if (matchQ) {
                         let lineStr = `${qNum}: Question ${matchQ[0]}`;
