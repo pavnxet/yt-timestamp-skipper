@@ -173,9 +173,9 @@ footer{border-top:1px solid var(--border); background:var(--surface-2); padding:
 <header class="hero">
   <div class="wrap hero-grid">
     <div>
-      <span class="pill">● Chrome extension · Manifest V3 · v3.1</span>
+      <span class="pill">● Chrome extension · Manifest V3 · v3.5</span>
       <h1>Turn long YouTube lectures into clickable chapters.</h1>
-      <p class="lead">YT Smart Chapters Pro reads a lecture's transcript and writes a clean, timestamped chapter list for you — with the questions, the correct-option reveals, the explanations, and the sponsor segments all marked. One click. Any length of video.</p>
+      <p class="lead">YT Smart Chapters Pro reads a lecture's transcript and writes a clean, timestamped chapter list for you — with the questions, the correct-option reveals, the explanations, and the sponsor segments all marked. One click. Any length of video — on YouTube, or on a video embedded anywhere.</p>
       <div class="cta">
         <a class="btn btn-primary" href="#install">Get the extension</a>
         <a class="btn btn-ghost" href="https://github.com/pavnxet/yt-timestamp-skipper" target="_blank" rel="noopener">View on GitHub</a>
@@ -196,8 +196,9 @@ footer{border-top:1px solid var(--border); background:var(--surface-2); padding:
     <p class="lead">Built for students and exam aspirants who live in 2–3 hour videos.</p>
     <div class="grid grid-3" style="margin-top:32px">
       <div class="card"><span class="ico">🤖</span><h3>AI chapter writing</h3><p>Send the transcript to AIKit Qwen, OpenRouter, or any OpenAI-compatible endpoint and get chapter names back.</p></div>
+      <div class="card"><span class="ico">🖼️</span><h3>Works inside embeds</h3><p>Runs inside YouTube players embedded on any website, including privacy-enhanced <code>youtube-nocookie.com</code> — a ⚡ launcher opens the panel over the player.</p></div>
       <div class="card"><span class="ico">🎯</span><h3>Question &amp; answer timestamps</h3><p>For MCQ lectures, it marks where each question starts, where the option is revealed, and where the explanation begins.</p></div>
-      <div class="card"><span class="ico">🏷️</span><h3>Smart filters</h3><p>Chips for <b>All</b>, <b>Questions</b>, <b>Answers</b> and <b>Explain</b> so you can revise exactly what you need.</p></div>
+      <div class="card"><span class="ico">🏷️</span><h3>Multi-select filters</h3><p>Chips for <b>Questions</b>, <b>Answers</b> and <b>Explain</b> toggle independently — combine Questions + Answers and skipping never lands on an explanation.</p></div>
       <div class="card"><span class="ico">⏳</span><h3>Handles marathon videos</h3><p>Long transcripts are chunked automatically and merged back into one clean, numbered list — nothing gets truncated.</p></div>
       <div class="card"><span class="ico">🚫</span><h3>Sponsor &amp; ad marks</h3><p>Detects sponsor reads, self-promo, intros, outros and filler — and can upload them to SponsorBlock for everyone.</p></div>
       <div class="card"><span class="ico">☁️</span><h3>Cloud sync</h3><p>Save chapters to your own Turso database and reload them on any device without spending AI credits again.</p></div>
@@ -240,7 +241,7 @@ footer{border-top:1px solid var(--border); background:var(--surface-2); padding:
     <h2>One button, or full control</h2>
     <div class="steps" style="margin-top:28px">
       <div class="step"><div class="n">1</div><div><h4>Click “⚡ Generate everything”</h4><p>The extension reads the transcript, writes the chapters and finds the ad segments in one pass. Prefer to do it by hand? Use the <b>Editor</b> tab.</p></div></div>
-      <div class="step"><div class="n">2</div><div><h4>Read the Chapters tab</h4><p>Every chapter is clickable and jumps the video to that moment. Use the filter chips to see only questions, answers or explanations.</p></div></div>
+      <div class="step"><div class="n">2</div><div><h4>Read the Chapters tab</h4><p>Every chapter is clickable and jumps the video to that moment. Toggle the filter chips to combine sections — pick Questions + Answers to skip explanations entirely.</p></div></div>
       <div class="step"><div class="n">3</div><div><h4>Save or share</h4><p><b>Save</b> writes to your cloud database; <b>Load</b> brings it back; <b>Copy</b> puts the list on your clipboard for notes or a YouTube description.</p></div></div>
       <div class="step"><div class="n">4</div><div><h4>Skip the ads</h4><p>In <b>Ads &amp; Sponsors</b>, scan the transcript and upload the segments to SponsorBlock so everyone can skip them.</p></div></div>
     </div>
@@ -266,6 +267,7 @@ footer{border-top:1px solid var(--border); background:var(--surface-2); padding:
         <tbody>
           <tr><td>AI provider</td><td>AIKit Qwen</td><td>AIKit, OpenRouter, or any OpenAI-compatible endpoint</td></tr>
           <tr><td>Generate chapters when a video opens</td><td>Off</td><td>Fully automatic mode</td></tr>
+          <tr><td>Copy transcript when a video opens</td><td>Off</td><td>Grabs the transcript to your clipboard and notifies you</td></tr>
           <tr><td>Auto save &amp; comment</td><td>Off</td><td>Saves to your database and posts the comment</td></tr>
           <tr><td>Auto upload ads to SponsorBlock</td><td>Off</td><td>Runs after the chapters finish</td></tr>
           <tr><td>Post timestamps as a comment</td><td>On</td><td>Applies to manual and automatic saves</td></tr>
