@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://pavnxet.github.io/yt-timestamp-skipper/sitemap.xml

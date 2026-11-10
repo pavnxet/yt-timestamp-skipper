@@ -3,12 +3,55 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>YT Smart Chapters Pro — AI chapter timestamps for YouTube lectures</title>
-<meta name="description" content="A Chrome extension that turns long YouTube lectures into clickable chapter lists — AI-written questions, answers and sponsor marks, with a free prompt toolkit that works with any AI.">
-<meta property="og:title" content="YT Smart Chapters Pro">
-<meta property="og:description" content="Turn any long YouTube lecture into a clickable chapter list with AI.">
+<title>YT Smart Chapters Pro — AI chapter timestamps &amp; MCQ skipper for YouTube lectures</title>
+<meta name="description" content="Free Chrome extension that turns long YouTube lectures into clickable chapter lists: AI-written question, answer and explanation timestamps, SponsorBlock segment detection, transcript export and keyboard skipping. Works with any OpenAI-compatible AI.">
+<meta name="keywords" content="youtube chapters, AI timestamps, MCQ timestamp extractor, lecture skipper, youtube transcript, SponsorBlock uploader, chrome extension for students, competitive exam revision">
+<meta name="author" content="pavnxet">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<link rel="canonical" href="https://pavnxet.github.io/yt-timestamp-skipper/">
+<meta name="theme-color" content="#FAF9F5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1B1A18" media="(prefers-color-scheme: dark)">
+<meta property="og:site_name" content="YT Smart Chapters Pro">
+<meta property="og:title" content="YT Smart Chapters Pro — AI chapter timestamps for YouTube lectures">
+<meta property="og:description" content="Turn any long YouTube lecture into a clickable chapter list with AI — questions, answers, explanations and sponsor marks, with keyboard skipping.">
 <meta property="og:type" content="website">
-<link rel="icon" href="assets/dash_light.png">
+<meta property="og:url" content="https://pavnxet.github.io/yt-timestamp-skipper/">
+<meta property="og:image" content="https://pavnxet.github.io/yt-timestamp-skipper/assets/logo.png">
+<meta property="og:image:alt" content="YT Smart Chapters Pro logo — play, skip and spark mark">
+<meta property="og:locale" content="en_IN">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="YT Smart Chapters Pro — AI chapter timestamps for YouTube lectures">
+<meta name="twitter:description" content="AI question, answer and sponsor timestamps for long YouTube lectures, with keyboard skipping and SponsorBlock upload.">
+<meta name="twitter:image" content="https://pavnxet.github.io/yt-timestamp-skipper/assets/logo.png">
+<link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/logo.png">
+<link rel="sitemap" type="application/xml" href="sitemap.xml">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "YT Smart Chapters Pro",
+  "alternateName": "YT Smart Chapters",
+  "applicationCategory": "BrowserApplication",
+  "operatingSystem": "Chrome, Edge, Brave, Opera",
+  "url": "https://pavnxet.github.io/yt-timestamp-skipper/",
+  "downloadUrl": "https://github.com/pavnxet/yt-timestamp-skipper",
+  "image": "https://pavnxet.github.io/yt-timestamp-skipper/assets/logo.png",
+  "description": "Chrome extension that turns long YouTube lectures into clickable chapter lists with AI-generated question, answer and explanation timestamps, SponsorBlock segment detection and keyboard skipping.",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "INR" },
+  "license": "https://github.com/pavnxet/yt-timestamp-skipper/blob/main/LICENSE",
+  "author": { "@type": "Person", "name": "pavnxet", "url": "https://github.com/pavnxet" },
+  "featureList": [
+    "AI question, answer and explanation timestamps",
+    "Keyboard chapter skipping",
+    "Multi-select section filters",
+    "SponsorBlock segment detection and upload",
+    "Transcript extraction and export",
+    "Turso (libSQL) cloud sync",
+    "Embedded YouTube player support"
+  ]
+}
+</script>
 <style>
 /* ---------------- Claude theme tokens ---------------- */
 :root{
@@ -60,7 +103,7 @@ nav{
 .nav-in{display:flex; align-items:center; gap:18px; height:60px}
 .brand{display:flex; align-items:center; gap:10px; font-family:var(--serif); font-weight:600; font-size:17px; color:var(--ink)}
 .brand:hover{text-decoration:none}
-.brand .dot{width:22px;height:22px;border-radius:7px;background:var(--accent);display:inline-block}
+.brand img{width:24px;height:24px;border-radius:7px;display:inline-block}
 .nav-links{display:flex; gap:18px; margin-left:auto; font-size:14px}
 .nav-links a{color:var(--ink-2)}
 .nav-links a:hover{color:var(--accent-ink); text-decoration:none}
@@ -157,7 +200,7 @@ footer{border-top:1px solid var(--border); background:var(--surface-2); padding:
 
 <nav>
   <div class="wrap nav-in">
-    <a class="brand" href="#top"><span class="dot"></span> YT Smart Chapters Pro</a>
+    <a class="brand" href="#top"><img src="assets/logo.svg" alt="YT Smart Chapters Pro logo" width="24" height="24"> YT Smart Chapters Pro</a>
     <div class="nav-links">
       <a href="#features">Features</a>
       <a href="#install">Install</a>
