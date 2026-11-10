@@ -1414,9 +1414,12 @@ select.yt-sk-select,
     user-select: none;
     transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease;
     -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
+    touch-action: none;
+    cursor: grab;
 }
 #yt-skipper-mobile-toggle:active { transform: scale(0.92); }
+#yt-skipper-mobile-toggle.yt-sk-dragging { transition: none; transform: none; cursor: grabbing; }
+#yt-skipper-mobile-toggle.yt-sk-dragging:active { transform: none; }
 
 @media (max-width: 600px) {
     #yt-skipper-dashboard {
@@ -1492,7 +1495,8 @@ select.yt-sk-select,
    THEMES — token sets adapted from the Astryx design system (MIT).
    Each theme only overrides the --cl-* tokens; no markup changes.
    ============================================================ */
-#yt-skipper-dashboard[data-yt-sk-theme="neutral"].yt-sk-light-theme {
+#yt-skipper-dashboard[data-yt-sk-theme="neutral"].yt-sk-light-theme,
+#yt-skipper-mobile-toggle[data-yt-sk-theme="neutral"].yt-sk-light-theme {
     --cl-canvas: #f1f1f1;
     --cl-surface: #ffffff;
     --cl-surface-2: #ffffff;
@@ -1516,7 +1520,8 @@ select.yt-sk-select,
     --cl-font-body: Figtree, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     --cl-font-heading: Figtree, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
-#yt-skipper-dashboard[data-yt-sk-theme="neutral"].yt-sk-dark-theme {
+#yt-skipper-dashboard[data-yt-sk-theme="neutral"].yt-sk-dark-theme,
+#yt-skipper-mobile-toggle[data-yt-sk-theme="neutral"].yt-sk-dark-theme {
     --cl-canvas: #1b1b1b;
     --cl-surface: #262626;
     --cl-surface-2: #1b1b1b;
@@ -1540,7 +1545,8 @@ select.yt-sk-select,
     --cl-font-body: Figtree, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     --cl-font-heading: Figtree, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
-#yt-skipper-dashboard[data-yt-sk-theme="butter"].yt-sk-light-theme {
+#yt-skipper-dashboard[data-yt-sk-theme="butter"].yt-sk-light-theme,
+#yt-skipper-mobile-toggle[data-yt-sk-theme="butter"].yt-sk-light-theme {
     --cl-canvas: #fdfbe4;
     --cl-surface: #ffffff;
     --cl-surface-2: #ffffff;
@@ -1564,7 +1570,8 @@ select.yt-sk-select,
     --cl-font-body: Outfit, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     --cl-font-heading: Outfit, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
-#yt-skipper-dashboard[data-yt-sk-theme="butter"].yt-sk-dark-theme {
+#yt-skipper-dashboard[data-yt-sk-theme="butter"].yt-sk-dark-theme,
+#yt-skipper-mobile-toggle[data-yt-sk-theme="butter"].yt-sk-dark-theme {
     --cl-canvas: #261a13;
     --cl-surface: #2e2117;
     --cl-surface-2: #3a2a1f;
@@ -1588,7 +1595,8 @@ select.yt-sk-select,
     --cl-font-body: Outfit, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     --cl-font-heading: Outfit, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
-#yt-skipper-dashboard[data-yt-sk-theme="chocolate"].yt-sk-light-theme {
+#yt-skipper-dashboard[data-yt-sk-theme="chocolate"].yt-sk-light-theme,
+#yt-skipper-mobile-toggle[data-yt-sk-theme="chocolate"].yt-sk-light-theme {
     --cl-canvas: #FFFCF7;
     --cl-surface: #FFFCF7;
     --cl-surface-2: #EDE4D4;
@@ -1612,7 +1620,8 @@ select.yt-sk-select,
     --cl-font-body: "Albert Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     --cl-font-heading: Fraunces, Georgia, "Times New Roman", Times, serif;
 }
-#yt-skipper-dashboard[data-yt-sk-theme="chocolate"].yt-sk-dark-theme {
+#yt-skipper-dashboard[data-yt-sk-theme="chocolate"].yt-sk-dark-theme,
+#yt-skipper-mobile-toggle[data-yt-sk-theme="chocolate"].yt-sk-dark-theme {
     --cl-canvas: #141010;
     --cl-surface: #1c1610;
     --cl-surface-2: #2a2018;
@@ -1636,7 +1645,8 @@ select.yt-sk-select,
     --cl-font-body: "Albert Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     --cl-font-heading: Fraunces, Georgia, "Times New Roman", Times, serif;
 }
-#yt-skipper-dashboard[data-yt-sk-theme="matcha"].yt-sk-light-theme {
+#yt-skipper-dashboard[data-yt-sk-theme="matcha"].yt-sk-light-theme,
+#yt-skipper-mobile-toggle[data-yt-sk-theme="matcha"].yt-sk-light-theme {
     --cl-canvas: #f0f0e0;
     --cl-surface: #ffffff;
     --cl-surface-2: #ffffff;
@@ -1660,7 +1670,8 @@ select.yt-sk-select,
     --cl-font-body: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     --cl-font-heading: "Playwrite US Trad", Georgia, "Times New Roman", Times, serif;
 }
-#yt-skipper-dashboard[data-yt-sk-theme="matcha"].yt-sk-dark-theme {
+#yt-skipper-dashboard[data-yt-sk-theme="matcha"].yt-sk-dark-theme,
+#yt-skipper-mobile-toggle[data-yt-sk-theme="matcha"].yt-sk-dark-theme {
     --cl-canvas: #12140e;
     --cl-surface: #1a1c14;
     --cl-surface-2: #1e2016;
@@ -1684,7 +1695,8 @@ select.yt-sk-select,
     --cl-font-body: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     --cl-font-heading: "Playwrite US Trad", Georgia, "Times New Roman", Times, serif;
 }
-#yt-skipper-dashboard[data-yt-sk-theme="stone"].yt-sk-light-theme {
+#yt-skipper-dashboard[data-yt-sk-theme="stone"].yt-sk-light-theme,
+#yt-skipper-mobile-toggle[data-yt-sk-theme="stone"].yt-sk-light-theme {
     --cl-canvas: #f0f0f7;
     --cl-surface: #ffffff;
     --cl-surface-2: #ffffff;
@@ -1708,7 +1720,8 @@ select.yt-sk-select,
     --cl-font-body: Figtree, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     --cl-font-heading: Montserrat, "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
-#yt-skipper-dashboard[data-yt-sk-theme="stone"].yt-sk-dark-theme {
+#yt-skipper-dashboard[data-yt-sk-theme="stone"].yt-sk-dark-theme,
+#yt-skipper-mobile-toggle[data-yt-sk-theme="stone"].yt-sk-dark-theme {
     --cl-canvas: #101018;
     --cl-surface: #1b1b21;
     --cl-surface-2: #25252a;
@@ -1732,7 +1745,8 @@ select.yt-sk-select,
     --cl-font-body: Figtree, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     --cl-font-heading: Montserrat, "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
-#yt-skipper-dashboard[data-yt-sk-theme="gothic"].yt-sk-light-theme {
+#yt-skipper-dashboard[data-yt-sk-theme="gothic"].yt-sk-light-theme,
+#yt-skipper-mobile-toggle[data-yt-sk-theme="gothic"].yt-sk-light-theme {
     --cl-canvas: #101314;
     --cl-surface: #101314;
     --cl-surface-2: #191d20;
@@ -1756,7 +1770,8 @@ select.yt-sk-select,
     --cl-font-body: Fustat, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     --cl-font-heading: Fustat, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
-#yt-skipper-dashboard[data-yt-sk-theme="gothic"].yt-sk-dark-theme {
+#yt-skipper-dashboard[data-yt-sk-theme="gothic"].yt-sk-dark-theme,
+#yt-skipper-mobile-toggle[data-yt-sk-theme="gothic"].yt-sk-dark-theme {
     --cl-canvas: #101314;
     --cl-surface: #101314;
     --cl-surface-2: #191d20;
@@ -1780,7 +1795,8 @@ select.yt-sk-select,
     --cl-font-body: Fustat, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     --cl-font-heading: Fustat, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
-#yt-skipper-dashboard[data-yt-sk-theme="y2k"].yt-sk-light-theme {
+#yt-skipper-dashboard[data-yt-sk-theme="y2k"].yt-sk-light-theme,
+#yt-skipper-mobile-toggle[data-yt-sk-theme="y2k"].yt-sk-light-theme {
     --cl-canvas: #cccffa;
     --cl-surface: #ffffff;
     --cl-surface-2: #ffffff;
@@ -1804,7 +1820,8 @@ select.yt-sk-select,
     --cl-font-body: Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     --cl-font-heading: Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
-#yt-skipper-dashboard[data-yt-sk-theme="y2k"].yt-sk-dark-theme {
+#yt-skipper-dashboard[data-yt-sk-theme="y2k"].yt-sk-dark-theme,
+#yt-skipper-mobile-toggle[data-yt-sk-theme="y2k"].yt-sk-dark-theme {
     --cl-canvas: #0e0f1a;
     --cl-surface: #16182b;
     --cl-surface-2: #16182b;

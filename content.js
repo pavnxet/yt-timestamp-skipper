@@ -1,5 +1,5 @@
 /**
- * YT Smart Chapters Pro v3.6.0
+ * YT Smart Chapters Pro v3.6.1
  * made with 💖 by pavnxet
  * GitHub: https://github.com/pavnxet/yt-timestamp-skipper
  */
@@ -145,6 +145,7 @@ let currentUiTheme = 'warm';
 function applyUiTheme(name) {
     currentUiTheme = name || 'warm';
     if (dashboard) dashboard.setAttribute('data-yt-sk-theme', currentUiTheme);
+    syncDashboardTheme();
 }
 
 function toggleDashboard() {
@@ -156,19 +157,26 @@ function toggleDashboard() {
     }
 }
 
-function syncDashboardTheme() {
-    if (!dashboard) return;
-    const isDark = document.documentElement.hasAttribute('dark') || 
-                   document.querySelector('html[dark]') !== null ||
-                   window.matchMedia('(prefers-color-scheme: dark)').matches;
+function isDarkMode() {
+    return document.documentElement.hasAttribute('dark') ||
+           document.querySelector('html[dark]') !== null ||
+           window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
 
-    if (isDark) {
-        dashboard.classList.remove('yt-sk-light-theme');
-        dashboard.classList.add('yt-sk-dark-theme');
-    } else {
-        dashboard.classList.remove('yt-sk-dark-theme');
-        dashboard.classList.add('yt-sk-light-theme');
+// The floating ⚡ button lives outside the panel, so it gets the same theme
+// attribute and mode class — the stylesheet then paints it with the same tokens.
+function syncDashboardTheme() {
+    const isDark = isDarkMode();
+    const toggle = document.getElementById('yt-skipper-mobile-toggle');
+    if (toggle) {
+        toggle.setAttribute('data-yt-sk-theme', currentUiTheme);
+        toggle.classList.toggle('yt-sk-dark-theme', isDark);
+        toggle.classList.toggle('yt-sk-light-theme', !isDark);
     }
+
+    if (!dashboard) return;
+    dashboard.classList.toggle('yt-sk-dark-theme', isDark);
+    dashboard.classList.toggle('yt-sk-light-theme', !isDark);
 }
 
 function createDashboard() {
@@ -3510,22 +3518,90 @@ createMiniWidget();
 setupMobileToggleButton();
 whenVideoReady(() => setTimeout(onVideoPageLoaded, 800));
 
+// Set by the drag handlers so a drag never also opens the panel
+let toggleWasDragged = false;
+
+function placeToggle(el, left, top) {
+    const maxLeft = Math.max(4, window.innerWidth - el.offsetWidth - 4);
+    const maxTop = Math.max(4, window.innerHeight - el.offsetHeight - 4);
+    el.style.left = Math.min(Math.max(4, left), maxLeft) + 'px';
+    el.style.top = Math.min(Math.max(4, top), maxTop) + 'px';
+    el.style.right = 'auto';
+    el.style.bottom = 'auto';
+}
+
+function makeToggleDraggable(el) {
+    let dragging = false, offX = 0, offY = 0;
+
+    const start = (x, y) => {
+        const r = el.getBoundingClientRect();
+        offX = x - r.left;
+        offY = y - r.top;
+        dragging = true;
+        toggleWasDragged = false;
+        el.classList.add('yt-sk-dragging');
+    };
+    const move = (x, y) => {
+        if (!dragging) return;
+        toggleWasDragged = true;
+        placeToggle(el, x - offX, y - offY);
+    };
+    const end = () => {
+        if (!dragging) return;
+        dragging = false;
+        el.classList.remove('yt-sk-dragging');
+        if (toggleWasDragged && el.style.left) {
+            chrome.storage.local.set({ togglePos: { left: el.style.left, top: el.style.top } });
+        }
+    };
+
+    el.addEventListener('mousedown', (e) => { e.preventDefault(); start(e.clientX, e.clientY); });
+    el.addEventListener('touchstart', (e) => {
+        const t = e.touches && e.touches[0];
+        if (t) start(t.clientX, t.clientY);
+    }, { passive: true });
+    document.addEventListener('mousemove', (e) => move(e.clientX, e.clientY));
+    document.addEventListener('touchmove', (e) => {
+        const t = e.touches && e.touches[0];
+        if (t) move(t.clientX, t.clientY);
+    }, { passive: true });
+    document.addEventListener('mouseup', end);
+    document.addEventListener('touchend', end);
+    // keep a dragged button on screen when the window shrinks
+    window.addEventListener('resize', () => {
+        if (el.style.left) placeToggle(el, parseFloat(el.style.left), parseFloat(el.style.top));
+    });
+}
+
 function setupMobileToggleButton() {
     if (!document.body) return;
     let existing = document.getElementById('yt-skipper-mobile-toggle');
     if (!existing) {
         mobileToggleBtn = document.createElement('div');
         mobileToggleBtn.id = 'yt-skipper-mobile-toggle';
-        mobileToggleBtn.title = 'Open YT Skipper Dashboard (or press Alt+X / click extension icon)';
+        mobileToggleBtn.title = 'Open YT Skipper Dashboard — drag to move (or press Alt+X)';
         mobileToggleBtn.innerHTML = '⚡';
         mobileToggleBtn.onclick = (e) => {
             e.stopPropagation();
+            if (toggleWasDragged) { toggleWasDragged = false; return; }
             toggleDashboard();
         };
         document.body.appendChild(mobileToggleBtn);
     } else {
         mobileToggleBtn = existing;
     }
+
+    if (!mobileToggleBtn.dataset.dragReady) {
+        mobileToggleBtn.dataset.dragReady = '1';
+        makeToggleDraggable(mobileToggleBtn);
+        chrome.storage.local.get(['togglePos'], (res) => {
+            const pos = res && res.togglePos;
+            if (pos && pos.left && pos.top) {
+                placeToggle(mobileToggleBtn, parseFloat(pos.left), parseFloat(pos.top));
+            }
+        });
+    }
+    syncDashboardTheme();
 }
 
 // --- Auto Comment on YouTube Feature ---
