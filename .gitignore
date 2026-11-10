@@ -16,6 +16,11 @@ __pycache__/
 
 # Local credentials
 config.json
+*.pem
+key.pem
+key.b64
+*.crx
+updates.xml
 secrets.json
 auth.json
 

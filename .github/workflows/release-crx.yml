@@ -1,0 +1,58 @@
+name: Release CRX
+
+# Builds a signed CRX3 on every version tag and publishes it, plus the Omaha
+# updates.xml, as release assets. Chrome polls that XML through the update_url
+# stamped into the packaged manifest, so installed copies update themselves.
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build (e.g. 3.7.0)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  crx:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Resolve version
+        id: v
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Building v$VERSION"
+
+      - name: Install packer
+        run: npm install --no-save crx3@1
+
+      - name: Build signed CRX and updates.xml
+        env:
+          CRX_PRIVATE_KEY: ${{ secrets.CRX_PRIVATE_KEY }}
+        run: node scripts/pack-crx.mjs "${{ steps.v.outputs.version }}" "${{ github.repository }}"
+
+      - name: Publish release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="v${{ steps.v.outputs.version }}"
+          gh release view "$TAG" >/dev/null 2>&1 || \
+            gh release create "$TAG" --title "YT Smart Chapters Pro $TAG" \
+              --notes "Signed CRX build of $TAG. Installed copies update from this release automatically."
+          gh release upload "$TAG" dist/yt-smart-chapters.crx dist/updates.xml --clobber
