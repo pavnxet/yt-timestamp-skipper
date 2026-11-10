@@ -9,6 +9,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 - `docs/` guide set: getting started, installation, configuration, AI providers, transcripts, chapters & filters, SponsorBlock, Turso, shortcuts, troubleshooting, architecture, development, FAQ.
 - `CONTRIBUTING.md`, `SECURITY.md`, this changelog.
 - Brand refresh: minimal play / skip / spark mark, regenerated icon set (16–128 px), SVG logo, light and dark lockups in `assets/`.
+- Self-hosted CRX auto-update: `scripts/pack-crx.mjs` and `.github/workflows/release-crx.yml` sign a CRX3 on tag push, publish `updates.xml` beside it, and installed copies update from the release. Setup and caveats in `docs/auto-update.md`.
 
 ### Changed
 - README rewritten for discoverability: keyword-led title and summary, badges, table of contents, feature index, configuration and shortcut tables, FAQ, browser support matrix.
