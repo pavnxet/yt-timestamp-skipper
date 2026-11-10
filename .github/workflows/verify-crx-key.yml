@@ -1,0 +1,30 @@
+name: Verify CRX key
+
+# Temporary: signs a throwaway build to prove CRX_PRIVATE_KEY decrypts.
+# Creates no release and no tag. Delete after one successful run.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - run: npm install --no-save crx3@1
+
+      - name: Sign a throwaway build
+        env:
+          CRX_PRIVATE_KEY: ${{ secrets.CRX_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          node scripts/pack-crx.mjs 3.6.2 "${{ github.repository }}"
+          echo "crx magic: $(head -c 4 dist/yt-smart-chapters.crx)"
+          grep -o 'appid="[^"]*"' dist/updates.xml
