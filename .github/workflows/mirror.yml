@@ -1,6 +1,15 @@
 name: Mirror to Codeberg
 
-on: [push, delete]
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Two mirror runs at once race on the target's refs and one fails with
+# "incorrect old value provided". Serialise them; never cancel a running mirror.
+concurrency:
+  group: mirror-to-codeberg
+  cancel-in-progress: false
 
 jobs:
   mirror_to_codeberg:
