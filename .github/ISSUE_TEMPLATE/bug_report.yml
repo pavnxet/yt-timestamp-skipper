@@ -1,0 +1,64 @@
+name: Bug report
+description: Something in the extension is broken or behaves unexpectedly
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please fill in every field — most bugs here come down to browser version, provider, or transcript source.
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and version
+      placeholder: Chrome 130.0.6723.92 on Windows 11
+    validations:
+      required: true
+  - type: input
+    id: video
+    attributes:
+      label: Video URL
+      description: A public video that reproduces the problem
+    validations:
+      required: true
+  - type: dropdown
+    id: provider
+    attributes:
+      label: AI provider and model
+      options:
+        - AIKit (Qwen)
+        - OpenRouter
+        - Custom / local endpoint
+        - Not applicable (no AI call involved)
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the video
+        2. Click Generate
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs actual
+    validations:
+      required: true
+  - type: textarea
+    id: console
+    attributes:
+      label: Console output
+      description: From the panel devtools and the service worker devtools
+      render: shell
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I reloaded the extension and the YouTube tab before reporting
+          required: true
+        - label: I searched existing issues
+          required: true

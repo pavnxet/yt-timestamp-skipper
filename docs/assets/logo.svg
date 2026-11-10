@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="YT Smart Chapters Pro logo">
+  <title>YT Smart Chapters Pro</title>
+  <rect width="512" height="512" rx="116" fill="#1F1E1D"/>
+  <path d="M132 170 L132 342 L274 256 Z" fill="#E0795A"/>
+  <path d="M300 200 L356 256 L300 312" fill="none" stroke="#F5F3EC" stroke-width="38" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M396 170 L404 194 L428 202 L404 210 L396 234 L388 210 L364 202 L388 194 Z" fill="#F5F3EC"/>
+  <rect x="132" y="386" width="248" height="16" rx="8" fill="#F5F3EC" opacity="0.16"/>
+  <rect x="132" y="386" width="140" height="16" rx="8" fill="#E0795A"/>
+  <rect x="266" y="374" width="6" height="40" rx="3" fill="#F5F3EC"/>
+</svg>
