@@ -230,7 +230,7 @@ html[dark] #yt-skipper-mobile-toggle {
     border-radius: 999px;
     background: var(--cl-accent);
     border: 1px solid var(--cl-accent);
-    color: #FFFFFF;
+    color: var(--cl-accent-ink);
     cursor: pointer;
     white-space: nowrap;
     transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
@@ -274,7 +274,7 @@ html[dark] #yt-skipper-mobile-toggle {
 .yt-sk-icon-btn.yt-sk-close-btn:hover {
     background: var(--cl-danger);
     border-color: var(--cl-danger);
-    color: #FFFFFF;
+    color: var(--cl-danger-ink);
 }
 
 /* ============================================================
@@ -316,7 +316,7 @@ html[dark] #yt-skipper-mobile-toggle {
 
 .yt-sk-tab-btn.active {
     background: var(--cl-surface);
-    color: var(--cl-accent-ink);
+    color: var(--cl-ink);
     box-shadow: 0 1px 4px rgba(31, 30, 29, 0.12);
 }
 
@@ -431,13 +431,13 @@ html[dark] #yt-skipper-mobile-toggle {
 .yt-sk-btn-primary {
     background: var(--cl-accent);
     border-color: var(--cl-accent);
-    color: #FFFFFF;
+    color: var(--cl-accent-ink);
 }
 
 .yt-sk-btn-primary:hover {
     background: var(--cl-accent-hover);
     border-color: var(--cl-accent-hover);
-    color: #FFFFFF;
+    color: var(--cl-accent-ink);
 }
 
 .yt-sk-btn-success {
@@ -448,7 +448,7 @@ html[dark] #yt-skipper-mobile-toggle {
 .yt-sk-btn-success:hover {
     background: var(--cl-success);
     border-color: var(--cl-success);
-    color: #FFFFFF;
+    color: var(--cl-success-ink);
 }
 
 .yt-sk-btn-sm {
@@ -461,13 +461,13 @@ html[dark] #yt-skipper-mobile-toggle {
 .yt-sk-action-btn-primary {
     background: var(--cl-accent) !important;
     border-color: var(--cl-accent) !important;
-    color: #FFFFFF !important;
+    color: var(--cl-accent-ink) !important;
     font-weight: 700;
 }
 .yt-sk-action-btn-primary:hover {
     background: var(--cl-accent-hover) !important;
     border-color: var(--cl-accent-hover) !important;
-    color: #FFFFFF !important;
+    color: var(--cl-accent-ink) !important;
 }
 .yt-sk-action-btn-clean { font-size: 11.5px; }
 
@@ -480,7 +480,7 @@ html[dark] #yt-skipper-mobile-toggle {
 .yt-sk-btn-db-save:hover {
     background: var(--cl-success) !important;
     border-color: var(--cl-success) !important;
-    color: #FFFFFF !important;
+    color: var(--cl-success-ink) !important;
 }
 .yt-sk-btn-db-load,
 .yt-sk-btn-copy {
@@ -562,7 +562,7 @@ select.yt-sk-select,
     height: 18px;
     border-radius: 50%;
     background: var(--cl-accent);
-    color: #FFFFFF;
+    color: var(--cl-accent-ink);
     font-size: 10px;
     font-weight: 700;
     display: flex;
@@ -629,7 +629,7 @@ select.yt-sk-select,
 .yt-sk-chip.active {
     background: var(--cl-accent);
     border-color: var(--cl-accent);
-    color: #FFFFFF;
+    color: var(--cl-accent-ink);
     font-weight: 700;
 }
 
@@ -936,7 +936,7 @@ select.yt-sk-select,
 .yt-sk-sb-curr-btn:hover {
     background: var(--cl-accent) !important;
     border-color: var(--cl-accent) !important;
-    color: #FFFFFF !important;
+    color: var(--cl-accent-ink) !important;
 }
 .yt-sk-sb-manual-row {
     display: flex;
@@ -1093,7 +1093,7 @@ select.yt-sk-select,
 }
 .yt-sk-sb-timerange:hover {
     background: var(--cl-accent);
-    color: #FFFFFF;
+    color: var(--cl-accent-ink);
     border-color: var(--cl-accent);
 }
 
@@ -1114,7 +1114,7 @@ select.yt-sk-select,
     flex: 1;
     background: var(--cl-accent) !important;
     border-color: var(--cl-accent) !important;
-    color: #FFFFFF !important;
+    color: var(--cl-accent-ink) !important;
     font-weight: 700;
     padding: 9px 12px;
     justify-content: center;
@@ -1176,7 +1176,7 @@ select.yt-sk-select,
     border: 1px solid var(--cl-accent);
     border-radius: 11px;
     background: var(--cl-accent);
-    color: #FFFFFF;
+    color: var(--cl-accent-ink);
     font-size: 12px;
     font-weight: 700;
     font-family: inherit;
@@ -1327,7 +1327,7 @@ select.yt-sk-select,
 #yt-skipper-mini-widget .mini-widget-btn:hover {
     background: var(--cl-accent);
     border-color: var(--cl-accent);
-    color: #FFFFFF;
+    color: var(--cl-accent-ink);
 }
 
 #mini-current-title {
@@ -1402,7 +1402,7 @@ select.yt-sk-select,
     height: 46px;
     border-radius: 50%;
     background: var(--cl-accent);
-    color: #FFFFFF;
+    color: var(--cl-accent-ink);
     font-size: 20px;
     font-weight: bold;
     display: flex;
@@ -1484,4 +1484,347 @@ select.yt-sk-select,
         transition: none !important;
         animation: none !important;
     }
+}
+
+#yt-skipper-dashboard { --cl-success-ink: #FFFFFF; --cl-danger-ink: #FFFFFF; }
+
+/* ============================================================
+   THEMES — token sets adapted from the Astryx design system (MIT).
+   Each theme only overrides the --cl-* tokens; no markup changes.
+   ============================================================ */
+#yt-skipper-dashboard[data-yt-sk-theme="neutral"].yt-sk-light-theme {
+    --cl-canvas: #f1f1f1;
+    --cl-surface: #ffffff;
+    --cl-surface-2: #ffffff;
+    --cl-sunken: #f1f1f1;
+    --cl-border: #00000014;
+    --cl-border-strong: #919191;
+    --cl-ink: #000000;
+    --cl-ink-2: #474747;
+    --cl-ink-3: #919191;
+    --cl-accent: #1b1b1b;
+    --cl-accent-hover: #1b1b1b;
+    --cl-accent-soft: #d4d4d4;
+    --cl-accent-ink: #ffffff;
+    --cl-success: #198100;
+    --cl-success-ink: #ffffff;
+    --cl-warning: #ffce2f;
+    --cl-danger: #c9303a;
+    --cl-danger-ink: #ffffff;
+    --cl-info: #0074e2;
+    --cl-ring: #00000014;
+    --cl-font-body: Figtree, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --cl-font-heading: Figtree, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+#yt-skipper-dashboard[data-yt-sk-theme="neutral"].yt-sk-dark-theme {
+    --cl-canvas: #1b1b1b;
+    --cl-surface: #262626;
+    --cl-surface-2: #1b1b1b;
+    --cl-sunken: #1b1b1b;
+    --cl-border: #ffffff1A;
+    --cl-border-strong: #525252;
+    --cl-ink: #ffffff;
+    --cl-ink-2: #9e9e9e;
+    --cl-ink-3: #525252;
+    --cl-accent: #f1f1f1;
+    --cl-accent-hover: #f1f1f1;
+    --cl-accent-soft: #474747;
+    --cl-accent-ink: #111111;
+    --cl-success: #64af4c;
+    --cl-success-ink: #ffffff;
+    --cl-warning: #ffce2f;
+    --cl-danger: #ff705d;
+    --cl-danger-ink: #ffffff;
+    --cl-info: #6d9cfe;
+    --cl-ring: #ffffff1A;
+    --cl-font-body: Figtree, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --cl-font-heading: Figtree, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+#yt-skipper-dashboard[data-yt-sk-theme="butter"].yt-sk-light-theme {
+    --cl-canvas: #fdfbe4;
+    --cl-surface: #ffffff;
+    --cl-surface-2: #ffffff;
+    --cl-sunken: #f3f2e2;
+    --cl-border: #e5e3d4;
+    --cl-border-strong: #adac9e;
+    --cl-ink: #1d1c11;
+    --cl-ink-2: #605f52;
+    --cl-ink-3: #adac9e;
+    --cl-accent: #225bff;
+    --cl-accent-hover: #225bff;
+    --cl-accent-soft: #225bff33;
+    --cl-accent-ink: #ffffff;
+    --cl-success: #004a05;
+    --cl-success-ink: #ffffff;
+    --cl-warning: #514700;
+    --cl-danger: #821b00;
+    --cl-danger-ink: #ffffff;
+    --cl-info: #225bff;
+    --cl-ring: #e5e3d4;
+    --cl-font-body: Outfit, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --cl-font-heading: Outfit, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+#yt-skipper-dashboard[data-yt-sk-theme="butter"].yt-sk-dark-theme {
+    --cl-canvas: #261a13;
+    --cl-surface: #2e2117;
+    --cl-surface-2: #3a2a1f;
+    --cl-sunken: #3a2a1f;
+    --cl-border: #f3f2e21a;
+    --cl-border-strong: #605f52;
+    --cl-ink: #f3f2e2;
+    --cl-ink-2: #adac9e;
+    --cl-ink-3: #605f52;
+    --cl-accent: #fdee8c;
+    --cl-accent-hover: #fdee8c;
+    --cl-accent-soft: #fdee8c40;
+    --cl-accent-ink: #111111;
+    --cl-success: #83bc82;
+    --cl-success-ink: #ffffff;
+    --cl-warning: #cdbe59;
+    --cl-danger: #ffc5b5;
+    --cl-danger-ink: #111111;
+    --cl-info: #81a9ff;
+    --cl-ring: #f3f2e21a;
+    --cl-font-body: Outfit, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --cl-font-heading: Outfit, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+#yt-skipper-dashboard[data-yt-sk-theme="chocolate"].yt-sk-light-theme {
+    --cl-canvas: #FFFCF7;
+    --cl-surface: #FFFCF7;
+    --cl-surface-2: #EDE4D4;
+    --cl-sunken: #EDE4D4;
+    --cl-border: #C4AC95;
+    --cl-border-strong: #C4AC95;
+    --cl-ink: #4a3520;
+    --cl-ink-2: #B88859;
+    --cl-ink-3: #C4AC95;
+    --cl-accent: #8C5927;
+    --cl-accent-hover: #8C5927;
+    --cl-accent-soft: #8C592714;
+    --cl-accent-ink: #ffffff;
+    --cl-success: #709900;
+    --cl-success-ink: #ffffff;
+    --cl-warning: #FFB600;
+    --cl-danger: #FD0000;
+    --cl-danger-ink: #ffffff;
+    --cl-info: #3a5e8c;
+    --cl-ring: #C4AC95;
+    --cl-font-body: "Albert Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --cl-font-heading: Fraunces, Georgia, "Times New Roman", Times, serif;
+}
+#yt-skipper-dashboard[data-yt-sk-theme="chocolate"].yt-sk-dark-theme {
+    --cl-canvas: #141010;
+    --cl-surface: #1c1610;
+    --cl-surface-2: #2a2018;
+    --cl-sunken: #2a2018;
+    --cl-border: #EDE4D41A;
+    --cl-border-strong: #6b5540;
+    --cl-ink: #EDE4D4;
+    --cl-ink-2: #c4a882;
+    --cl-ink-3: #6b5540;
+    --cl-accent: #d4a06a;
+    --cl-accent-hover: #d4a06a;
+    --cl-accent-soft: #d4a06a20;
+    --cl-accent-ink: #ffffff;
+    --cl-success: #96bf2a;
+    --cl-success-ink: #ffffff;
+    --cl-warning: #ffc940;
+    --cl-danger: #ff5c5c;
+    --cl-danger-ink: #ffffff;
+    --cl-info: #7ba8d4;
+    --cl-ring: #EDE4D41A;
+    --cl-font-body: "Albert Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --cl-font-heading: Fraunces, Georgia, "Times New Roman", Times, serif;
+}
+#yt-skipper-dashboard[data-yt-sk-theme="matcha"].yt-sk-light-theme {
+    --cl-canvas: #f0f0e0;
+    --cl-surface: #ffffff;
+    --cl-surface-2: #ffffff;
+    --cl-sunken: #f0f0e0;
+    --cl-border: #dce3ce;
+    --cl-border-strong: #c0cba9;
+    --cl-ink: #3e481d;
+    --cl-ink-2: #5a6b2a;
+    --cl-ink-3: #c0cba9;
+    --cl-accent: #3e481d;
+    --cl-accent-hover: #3e481d;
+    --cl-accent-soft: #3e481d14;
+    --cl-accent-ink: #ffffff;
+    --cl-success: #4d9900;
+    --cl-success-ink: #ffffff;
+    --cl-warning: #f2c000;
+    --cl-danger: #fd0000;
+    --cl-danger-ink: #ffffff;
+    --cl-info: #3a5e8c;
+    --cl-ring: #dce3ce;
+    --cl-font-body: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --cl-font-heading: "Playwrite US Trad", Georgia, "Times New Roman", Times, serif;
+}
+#yt-skipper-dashboard[data-yt-sk-theme="matcha"].yt-sk-dark-theme {
+    --cl-canvas: #12140e;
+    --cl-surface: #1a1c14;
+    --cl-surface-2: #1e2016;
+    --cl-sunken: #3e481d;
+    --cl-border: #c0cba91a;
+    --cl-border-strong: #5a6440;
+    --cl-ink: #c0cba9;
+    --cl-ink-2: #94a468;
+    --cl-ink-3: #5a6440;
+    --cl-accent: #c0cba9;
+    --cl-accent-hover: #c0cba9;
+    --cl-accent-soft: #c0cba920;
+    --cl-accent-ink: #111111;
+    --cl-success: #6dbf2a;
+    --cl-success-ink: #ffffff;
+    --cl-warning: #f6d066;
+    --cl-danger: #ff5c5c;
+    --cl-danger-ink: #ffffff;
+    --cl-info: #a7c9e3;
+    --cl-ring: #c0cba91a;
+    --cl-font-body: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --cl-font-heading: "Playwrite US Trad", Georgia, "Times New Roman", Times, serif;
+}
+#yt-skipper-dashboard[data-yt-sk-theme="stone"].yt-sk-light-theme {
+    --cl-canvas: #f0f0f7;
+    --cl-surface: #ffffff;
+    --cl-surface-2: #ffffff;
+    --cl-sunken: #e2e2e8;
+    --cl-border: #e2e2e8;
+    --cl-border-strong: #d4d3dd;
+    --cl-ink: #25252a;
+    --cl-ink-2: #5f5f64;
+    --cl-ink-3: #d4d3dd;
+    --cl-accent: #25252a;
+    --cl-accent-hover: #25252a;
+    --cl-accent-soft: #25252a14;
+    --cl-accent-ink: #ffffff;
+    --cl-success: #354f31;
+    --cl-success-ink: #ffffff;
+    --cl-warning: #524818;
+    --cl-danger: #603c37;
+    --cl-danger-ink: #ffffff;
+    --cl-info: #516074;
+    --cl-ring: #e2e2e8;
+    --cl-font-body: Figtree, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --cl-font-heading: Montserrat, "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+#yt-skipper-dashboard[data-yt-sk-theme="stone"].yt-sk-dark-theme {
+    --cl-canvas: #101018;
+    --cl-surface: #1b1b21;
+    --cl-surface-2: #25252a;
+    --cl-sunken: #3a3a42;
+    --cl-border: #f0f0f91a;
+    --cl-border-strong: #5e5e64;
+    --cl-ink: #f0f0f9;
+    --cl-ink-2: #ababb3;
+    --cl-ink-3: #5e5e64;
+    --cl-accent: #f0f0f9;
+    --cl-accent-hover: #f0f0f9;
+    --cl-accent-soft: #f0f0f920;
+    --cl-accent-ink: #111111;
+    --cl-success: #b3d0af;
+    --cl-success-ink: #111111;
+    --cl-warning: #d9c794;
+    --cl-danger: #e0bdb8;
+    --cl-danger-ink: #111111;
+    --cl-info: #9aadc7;
+    --cl-ring: #f0f0f91a;
+    --cl-font-body: Figtree, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --cl-font-heading: Montserrat, "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+#yt-skipper-dashboard[data-yt-sk-theme="gothic"].yt-sk-light-theme {
+    --cl-canvas: #101314;
+    --cl-surface: #101314;
+    --cl-surface-2: #191d20;
+    --cl-sunken: #24292d;
+    --cl-border: #e8f1f61a;
+    --cl-border-strong: #495056;
+    --cl-ink: #e8f1f6;
+    --cl-ink-2: #96a0ab;
+    --cl-ink-3: #495056;
+    --cl-accent: #e8f1f6;
+    --cl-accent-hover: #e8f1f6;
+    --cl-accent-soft: #e8f1f620;
+    --cl-accent-ink: #111111;
+    --cl-success: #b3c79a;
+    --cl-success-ink: #111111;
+    --cl-warning: #d3c490;
+    --cl-danger: #c6a6a2;
+    --cl-danger-ink: #ffffff;
+    --cl-info: #8aa1d8;
+    --cl-ring: #e8f1f61a;
+    --cl-font-body: Fustat, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --cl-font-heading: Fustat, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+#yt-skipper-dashboard[data-yt-sk-theme="gothic"].yt-sk-dark-theme {
+    --cl-canvas: #101314;
+    --cl-surface: #101314;
+    --cl-surface-2: #191d20;
+    --cl-sunken: #24292d;
+    --cl-border: #e8f1f61a;
+    --cl-border-strong: #495056;
+    --cl-ink: #e8f1f6;
+    --cl-ink-2: #96a0ab;
+    --cl-ink-3: #495056;
+    --cl-accent: #e8f1f6;
+    --cl-accent-hover: #e8f1f6;
+    --cl-accent-soft: #e8f1f620;
+    --cl-accent-ink: #111111;
+    --cl-success: #b3c79a;
+    --cl-success-ink: #111111;
+    --cl-warning: #d3c490;
+    --cl-danger: #c6a6a2;
+    --cl-danger-ink: #ffffff;
+    --cl-info: #8aa1d8;
+    --cl-ring: #e8f1f61a;
+    --cl-font-body: Fustat, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --cl-font-heading: Fustat, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+#yt-skipper-dashboard[data-yt-sk-theme="y2k"].yt-sk-light-theme {
+    --cl-canvas: #cccffa;
+    --cl-surface: #ffffff;
+    --cl-surface-2: #ffffff;
+    --cl-sunken: #f1e6db;
+    --cl-border: #382e24;
+    --cl-border-strong: #d1c5b8;
+    --cl-ink: #2d241b;
+    --cl-ink-2: #5a5146;
+    --cl-ink-3: #d1c5b8;
+    --cl-accent: #2d241b;
+    --cl-accent-hover: #2d241b;
+    --cl-accent-soft: #2d241b14;
+    --cl-accent-ink: #ffffff;
+    --cl-success: #c5e17a;
+    --cl-success-ink: #111111;
+    --cl-warning: #ffe08a;
+    --cl-danger: #ffc3c3;
+    --cl-danger-ink: #111111;
+    --cl-info: #00649b;
+    --cl-ring: #382e24;
+    --cl-font-body: Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --cl-font-heading: Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+#yt-skipper-dashboard[data-yt-sk-theme="y2k"].yt-sk-dark-theme {
+    --cl-canvas: #0e0f1a;
+    --cl-surface: #16182b;
+    --cl-surface-2: #16182b;
+    --cl-sunken: #1f2238;
+    --cl-border: #edeffc1A;
+    --cl-border-strong: #4a4f6b;
+    --cl-ink: #edeffc;
+    --cl-ink-2: #a6acd6;
+    --cl-ink-3: #4a4f6b;
+    --cl-accent: #edeffc;
+    --cl-accent-hover: #edeffc;
+    --cl-accent-soft: #edeffc20;
+    --cl-accent-ink: #111111;
+    --cl-success: #c5e17a;
+    --cl-success-ink: #111111;
+    --cl-warning: #fde08f;
+    --cl-danger: #ffc3c3;
+    --cl-danger-ink: #111111;
+    --cl-info: #70c1ff;
+    --cl-ring: #edeffc1A;
+    --cl-font-body: Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --cl-font-heading: Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }

@@ -1,5 +1,5 @@
 /**
- * YT Smart Chapters Pro v3.5.2
+ * YT Smart Chapters Pro v3.6.0
  * made with 💖 by pavnxet
  * GitHub: https://github.com/pavnxet/yt-timestamp-skipper
  */
@@ -140,6 +140,12 @@ function skipRelative(dir) {
 
 // --- Dashboard UI ---
 let dashboard = null;
+let currentUiTheme = 'warm';
+
+function applyUiTheme(name) {
+    currentUiTheme = name || 'warm';
+    if (dashboard) dashboard.setAttribute('data-yt-sk-theme', currentUiTheme);
+}
 
 function toggleDashboard() {
     if (!dashboard) createDashboard();
@@ -174,6 +180,7 @@ function createDashboard() {
         dashboard.style.width = 'min(440px, calc(100vw - 16px))';
         dashboard.style.right = '8px';
     }
+    dashboard.setAttribute('data-yt-sk-theme', currentUiTheme);
     dashboard.innerHTML = `
         <div class="yt-sk-header" id="yt-sk-header" title="Double-click to minimize or expand">
             <div class="yt-sk-header-top">
@@ -345,6 +352,21 @@ function createDashboard() {
 
         <!-- TAB 4: SETTINGS -->
         <div class="yt-sk-tab-content" id="yt-sk-tab-settings">
+
+            <div class="yt-sk-card">
+                <div class="yt-sk-section-title">🎨 Theme</div>
+                <div class="yt-sk-section-sub">Recolours the panel. Each theme has its own light and dark variant, so it still follows your YouTube theme.</div>
+                <select id="yt-sk-theme-select" class="yt-sk-select">
+                    <option value="warm">Warm — the original terracotta look</option>
+                    <option value="neutral">Neutral — monochrome, content first</option>
+                    <option value="butter">Butter — soft cream with a blue accent</option>
+                    <option value="chocolate">Chocolate — warm browns and cream</option>
+                    <option value="matcha">Matcha — muted green and olive</option>
+                    <option value="stone">Stone — cool blue-grey</option>
+                    <option value="gothic">Gothic — always dark</option>
+                    <option value="y2k">Y2K — retro lavender pop</option>
+                </select>
+            </div>
 
             <div class="yt-sk-card">
                 <div class="yt-sk-section-title">⌨️ Keyboard shortcuts</div>
@@ -964,7 +986,7 @@ function createDashboard() {
         'openrouterKey', 'openrouterModel',
         'customUrl', 'customApiKey', 'customModel', 'customProviderName', 'customProfiles', 'customActiveProfileId', 'disableChunking',
         'shortcuts',
-        'autoComment', 'showMiniWidget', 'autoGenerate', 'autoSaveSync', 'autoUploadSb', 'autoCopyTranscript',
+        'autoComment', 'showMiniWidget', 'autoGenerate', 'autoSaveSync', 'autoUploadSb', 'autoCopyTranscript', 'uiTheme',
         'sbUserId', 'sbCategoryMode',
         'transcriptApiKey',
         'soundEnabled', 'soundUrl', 'soundVolume', 'soundCustomData'
@@ -979,6 +1001,17 @@ function createDashboard() {
             autoGenToggle.checked = !!res.autoGenerate;
             autoGenToggle.onchange = () => {
                 chrome.storage.local.set({ autoGenerate: autoGenToggle.checked });
+            };
+        }
+
+        // Theme
+        const themeSelect = document.getElementById('yt-sk-theme-select');
+        if (themeSelect) {
+            themeSelect.value = res.uiTheme || 'warm';
+            applyUiTheme(themeSelect.value);
+            themeSelect.onchange = () => {
+                applyUiTheme(themeSelect.value);
+                chrome.storage.local.set({ uiTheme: themeSelect.value });
             };
         }
 
@@ -1326,6 +1359,7 @@ function createDashboard() {
         const autoGenerate = document.getElementById('yt-sk-auto-generate')?.checked || false;
         const autoSaveSync = document.getElementById('yt-sk-auto-save-sync')?.checked || false;
         const autoCopyTranscript = document.getElementById('yt-sk-auto-copy-transcript')?.checked || false;
+        const uiTheme = document.getElementById('yt-sk-theme-select')?.value || 'warm';
         const miniChecked = document.getElementById('yt-sk-show-mini-widget')?.checked || false;
         const soundEnabled = document.getElementById('yt-sk-sound-enabled')?.checked ?? true;
         const soundUrl = document.getElementById('yt-sk-sound-url')?.value.trim() || '';
@@ -1338,6 +1372,7 @@ function createDashboard() {
             autoGenerate: autoGenerate,
             autoSaveSync: autoSaveSync,
             autoCopyTranscript: autoCopyTranscript,
+            uiTheme: uiTheme,
             showMiniWidget: miniChecked,
             soundEnabled: soundEnabled,
             soundUrl: soundUrl,
