@@ -135,3 +135,33 @@ matches the tag.
   update may wait until the next browser restart.
 - **For most users the Chrome Web Store is still better.** It is the only route that gives
   a one-click install *and* automatic updates without registry edits.
+
+---
+
+## The Chrome Web Store route
+
+The store is the other channel, and the only one that gives users a one-click install
+*and* automatic updates. `.github/workflows/publish-cws.yml` publishes to it on the same
+tag push, so both channels ship from one `git tag`.
+
+It needs an OAuth2 refresh token once:
+
+1. Create a project in the [Google Cloud Console](https://console.cloud.google.com/), enable
+   the **Chrome Web Store API**, and create an **OAuth client** of type *Desktop app*.
+2. Run the [Chrome Web Store API quickstart](https://developer.chrome.com/docs/webstore/using-api)
+   once to exchange your client ID/secret for a **refresh token**.
+3. Add five repository secrets:
+
+   | Secret | Where it comes from |
+   | --- | --- |
+   | `CWS_EXTENSION_ID` | the 32-character ID in your store listing |
+   | `CWS_PUBLISHER_ID` | Chrome Web Store developer dashboard |
+   | `CWS_CLIENT_ID` | the OAuth client |
+   | `CWS_CLIENT_SECRET` | the OAuth client |
+   | `CWS_REFRESH_TOKEN` | from the quickstart above |
+
+The workflow runs `scripts/pack-store.mjs`, which stages only the shipped files and
+**strips `update_url`** — a self-hosted endpoint must not appear in a store build.
+
+The store takes over updates from there, and it is the only channel where users never see
+`CRX_REQUIRED_PROOF_MISSING`.
