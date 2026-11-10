@@ -3,6 +3,9 @@ name: Release CRX
 # Builds a signed CRX3 on every version tag and publishes it, plus the Omaha
 # updates.xml, as release assets. Chrome polls that XML through the update_url
 # stamped into the packaged manifest, so installed copies update themselves.
+#
+# It also attaches a ready-to-upload store zip, so publishing to the Chrome Web
+# Store stays a manual drag-and-drop — no Google Cloud project or OAuth needed.
 on:
   push:
     tags:
@@ -46,6 +49,13 @@ jobs:
           CRX_PRIVATE_KEY: ${{ secrets.CRX_PRIVATE_KEY }}
         run: node scripts/pack-crx.mjs "${{ steps.v.outputs.version }}" "${{ github.repository }}"
 
+      - name: Stage and zip the store build
+        run: |
+          set -euo pipefail
+          node scripts/pack-store.mjs "${{ steps.v.outputs.version }}"
+          cd dist/store
+          zip -qr ../yt-smart-chapters-store.zip .
+
       - name: Publish release assets
         env:
           GH_TOKEN: ${{ github.token }}
@@ -55,4 +65,8 @@ jobs:
           gh release view "$TAG" >/dev/null 2>&1 || \
             gh release create "$TAG" --title "YT Smart Chapters Pro $TAG" \
               --notes "Signed CRX build of $TAG. Installed copies update from this release automatically."
-          gh release upload "$TAG" dist/yt-smart-chapters.crx dist/updates.xml --clobber
+          gh release upload "$TAG" \
+            dist/yt-smart-chapters.crx \
+            dist/updates.xml \
+            dist/yt-smart-chapters-store.zip \
+            --clobber
