@@ -15,6 +15,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 - README rewritten for discoverability: keyword-led title and summary, badges, table of contents, feature index, configuration and shortcut tables, FAQ, browser support matrix.
 - Landing page metadata: canonical URL, Open Graph and Twitter cards, JSON-LD `SoftwareApplication`, `robots.txt` and `sitemap.xml`.
 
+## [3.6.2]
+
+### Fixed
+- Chapter lists came out empty when a chapter title contained `|` — for example `01:29 - Idioms [MCQ] | to bell the cat = …`. Every line with a pipe was treated as a markdown table row, so the timestamp was read out of the wrong cell and the line was silently dropped. A line now only counts as a table row when it starts with `|`. The same over-broad test was fixed in the auto-comment formatter.
+
 ## [3.6.1]
 
 ### Changed
