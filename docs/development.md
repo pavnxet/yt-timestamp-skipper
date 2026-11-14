@@ -1,63 +1,43 @@
 # Development
 
-## Setup
+## Layout
+
+| File | Role |
+| --- | --- |
+| `content.js` | All UI and logic (~222 KB). Grep it, never page it. |
+| `content.css` | Panel, themes, chapter card, tooltip. |
+| `background.js` | Service worker: transcript fetch, AI calls, SponsorBlock. |
+| `embed-launcher.js` | ⚡ launcher on embedded players. |
+| `scripts/pack-crx.mjs` | Signs the CRX3 and writes `updates.xml`. |
+| `AGENTS.md` | Agent protocol + project profile (§12). Read this before changing code. |
+| `learning/` | Committed project memory — start with `learning/BRIEF.md`. |
+
+## First-time setup
 
 ```bash
-git clone https://github.com/pavnxet/yt-timestamp-skipper.git
-cd yt-timestamp-skipper
+./scripts/setup.sh          # Windows: .\scripts\setup.ps1
 ```
 
-There is no `npm install` and no bundler. Edit files, then click **Reload** on the extension card in `chrome://extensions/`.
+This installs the git hooks, creates the private denylist at `.git/agent-denylist.txt`, and runs the safety doctor.
 
-## The loop
+## Checks before you push
 
-**Step 1:** Keep the panel's devtools open — right-click inside the panel → **Inspect**. `content.js` logs there.
+```bash
+node --check content.js
+node --check background.js
+python scripts/scan_sensitive.py --all
+```
 
-**Step 2:** Keep the service worker's devtools open — `chrome://extensions/` → **service worker**. `background.js` logs there, including chunk progress and every outbound request.
+The `secret-scan` workflow runs the same scanner plus Gitleaks on every push and pull request.
 
-**Step 3:** After editing `content.js` or `content.css`, reload the tab (not just the extension) so the content script re-injects.
+## House rules
 
-**Step 4:** After editing `background.js` or `manifest.json`, press **Reload** on the extension card and then reload the tab.
+- Bump `manifest.json` `version` — the release pipeline signs whatever is there.
+- Add a `CHANGELOG.md` entry.
+- Never regenerate `CRX_PRIVATE_KEY`: the extension ID derives from it, and a new key ends updates for every install.
+- Chapter titles may contain `|`; table sniffing must require a **leading** pipe.
+- Overlay UI goes on `document.fullscreenElement || document.body`.
 
-## Conventions
+## Releasing
 
-| Area | Rule |
-| :--- | :--- |
-| DOM ids | Prefix `yt-sk-` so injected nodes never collide with YouTube's |
-| Themes | Add a new theme as a `[data-yt-sk-theme="name"]` block of custom properties in `content.css`; no JS changes |
-| Network | All `fetch` calls belong in `background.js`; content scripts message it |
-| Prompts | Prompt text lives in `background.js` and is mirrored in `docs/toolkit/` — change both together |
-| Formatting | 4-space indent, semicolons, single quotes, `async`/`await` over raw promise chains in new code |
-| No dependencies | No frameworks, no CDN scripts; the extension must work offline except for its API calls |
-
-## Adding a UI theme
-
-**Step 1:** Copy an existing `[data-yt-sk-theme="…"]` block in `content.css`.
-
-**Step 2:** Change the custom properties — `--canvas`, `--surface`, `--ink`, `--accent`, and the semantic colours.
-
-**Step 3:** Add an `<option>` to `#yt-sk-theme-select` in `content.js`.
-
-**Step 4:** Reload and check both light and dark OS settings.
-
-## Adding an AI provider
-
-**Step 1:** Add the base URL and credentials to the provider switch in `background.js`.
-
-**Step 2:** Route it through the existing `callAiForChapters` path so chunking and merging stay shared.
-
-**Step 3:** Add the fields to the settings load/save block in `content.js`.
-
-**Step 4:** Document it in [ai-providers.md](ai-providers.md) and in the README table.
-
-## Release checklist
-
-1. Bump `version` in `manifest.json`.
-2. Add a `CHANGELOG.md` entry with the date.
-3. Confirm the new version string appears in the README badge and the panel header.
-4. Test: fresh install → transcript → chapters → filter → `]` / `[` → save → comment → SponsorBlock dry run.
-5. Tag the commit and attach a ZIP of the repo (without `old version/`) to the release.
-
-## Reporting bugs
-
-Include: browser and version, the video URL, the console output from both devtools, and the provider/model in use. The [issue template](https://github.com/pavnxet/yt-timestamp-skipper/issues/new) asks for exactly these.
+Push a `v*` tag. See [auto-update.md](auto-update.md).

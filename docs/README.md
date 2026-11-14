@@ -1,33 +1,30 @@
-# Documentation — YT Smart Chapters Pro
+# Documentation
 
-Everything about installing, configuring and extending the extension. Start with **Getting started** if this is your first run; jump to **Troubleshooting** if something is broken.
+Everything about **YT Smart Chapters Pro** — a Chrome MV3 extension that turns long YouTube lectures into clickable chapters.
 
-| # | Guide | What it answers |
-| :-: | :--- | :--- |
-| 1 | [Getting started](getting-started.md) | How do I install it and get my first chapter list? |
-| 2 | [Installation](installation.md) | Unpacked install, updates, what each permission is for |
-| 3 | [Configuration](configuration.md) | What does every setting and storage key do? |
-| 4 | [AI providers](ai-providers.md) | AIKit vs OpenRouter vs custom; models, cost, chunking |
-| 5 | [Transcripts](transcripts.md) | Where transcripts come from, and why one is sometimes missing |
-| 6 | [Chapters & filters](chapters-and-filters.md) | Reading the table, section chips, progress-bar markers |
-| 7 | [SponsorBlock](sponsorblock.md) | Detection, paste format, categories, upload errors |
-| 8 | [Turso sync](turso-sync.md) | Creating a libSQL database and syncing lists across devices |
-| 9 | [Keyboard shortcuts](keyboard-shortcuts.md) | Defaults, rebinding, conflicts |
-| 10 | [Troubleshooting](troubleshooting.md) | Symptom → cause → fix |
-| 11 | [Architecture](architecture.md) | File map, message flow, storage schema |
-| 12 | [Development](development.md) | Local workflow, conventions, release checklist |
-| 13 | [FAQ](faq.md) | The long-form questions |
+## Start here
 
-## Also in this folder
+| If you want to… | Read |
+| --- | --- |
+| Install it in two minutes | [installation.md](installation.md) |
+| Understand what it does first | [getting-started.md](getting-started.md) |
+| Know every setting | [configuration.md](configuration.md) |
+| Write chapters with your own AI key | [ai-providers.md](ai-providers.md) |
+| Work without any API key | [ai-providers.md](ai-providers.md#manual-mode-no-api-key) |
+| Fix transcripts that will not load | [transcripts.md](transcripts.md) |
+| Understand the chapter list and filters | [chapters-and-filters.md](chapters-and-filters.md) |
+| Mark sponsor segments | [sponsorblock.md](sponsorblock.md) |
+| Sync chapters across machines | [turso-sync.md](turso-sync.md) |
+| Use the keyboard only | [keyboard-shortcuts.md](keyboard-shortcuts.md) |
+| Something is broken | [troubleshooting.md](troubleshooting.md) |
+| Work on the code | [development.md](development.md), [architecture.md](architecture.md) |
+| Ship a release | [auto-update.md](auto-update.md) |
 
-- **[toolkit/](toolkit/SKILL.md)** — the exact prompts the extension sends for chapters, MCQ timestamps and SponsorBlock segments. Copy them into any chat AI to reproduce the workflow by hand, for free.
-- **index.html** — the GitHub Pages landing page.
-- **assets/** — screenshots and brand files used by the landing page.
+## Two ways to write chapters
 
-## Conventions used in these guides
+The extension ships with **two generation modes**, chosen in **Settings → How chapters get written**:
 
-- `Panel` = the dashboard the extension injects on the video page.
-- `Editor` tab = the transcript + chapter table editor.
-- `Chapters` tab = the generated chapter cards and filters.
-- Timestamps are `MM:SS` under an hour and `HH:MM:SS` above it.
-- "Provider" always means an OpenAI-compatible chat-completions endpoint.
+- **Manual (default)** — no API key anywhere. Press **🧠 Copy skill** in the Editor and paste the result into a free AI site.
+- **API** — your own provider key writes chapters inside the extension.
+
+Most other features (transcript capture, filters, skipping, SponsorBlock, Turso) work in both modes.

@@ -7,7 +7,7 @@
 const DEFAULT_AIKIT_URL = "https://claude.aikit.club/qwen.aikit.club/v1";
 const DEFAULT_AIKIT_TOKEN = "";
 const DEFAULT_AIKIT_MODEL = "qwen3.8-max";
-const DEFAULT_TRANSCRIPT_API_KEY = "sk_ZDrY9xqIVpMGguu0pWru_CEUtmHO-eMW1rWqf_Wk7WA";  // scan:allow — shared default key; a client-side extension cannot hide it
+const DEFAULT_TRANSCRIPT_API_KEY = "";  // No shared default: every user supplies their own key in Settings.
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'fetchTranscriptFromApi') {
@@ -1380,6 +1380,9 @@ async function fetchTranscriptFromApi({ videoId, apiKey }) {
     }
 
     const key = (apiKey && apiKey.trim()) ? apiKey.trim() : DEFAULT_TRANSCRIPT_API_KEY;
+    if (!key) {
+        throw new Error('No transcript API key configured. Add your own key in Settings \u2192 Transcript API, or switch to Manual mode and use Copy skill with a free AI site.');
+    }
     const url = `https://transcriptapi.com/api/v2/youtube/transcript?video_url=${encodeURIComponent(cleanId)}`;
 
     console.log(`[TranscriptAPI] Fetching transcript fallback for video: ${cleanId}...`);

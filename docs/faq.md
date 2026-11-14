@@ -1,83 +1,28 @@
 # FAQ
 
-## General
+**Does it work without an API key?**
+Yes — that is the default. **Manual mode** copies the chapter-writing skill to your clipboard so you can use any free AI site. Only the optional in-app AI needs a key.
 
-**What exactly does this extension do?**
-It reads a YouTube lecture's transcript, asks an AI endpoint for question / answer / explanation timestamps, and turns them into clickable chapters with keyboard skipping. It can also find sponsor segments, upload them to SponsorBlock, save lists to your own database, and post the list as a comment.
+**Is there a built-in transcript key?**
+No. Add your own TranscriptAPI key in Settings. Videos with working YouTube captions need no key at all.
 
-**Is it free?**
-The extension is free and MIT-licensed. AI calls cost whatever your provider charges — a long lecture is a large input, so a cheap model matters.
+**Does the chapter card work in fullscreen?**
+Yes. It is appended to the fullscreen element, not the page body.
 
-**Do I need an account?**
-No account with the author. You need an AI endpoint, and optionally a Turso database and a SponsorBlock private ID.
+**Will it post comments without asking?**
+Only when **Auto save & comment** is on, or when you press Save with commenting enabled.
 
-**Does it collect data?**
-No telemetry. Keys and lists stay in `chrome.storage.local` and in the Turso database you configure.
+**Does it work on Shorts, live streams and embedded players?**
+Video IDs are resolved from `/watch`, `/live/`, `/shorts/`, `/embed/` and `/v/`. Live streams have no transcript until they end, so they need the TranscriptAPI path. Embeds always use TranscriptAPI.
 
-**Which videos does it work on?**
-Any YouTube video with captions, including live (after they end), Shorts and embedded players on other sites.
+**Where is my data stored?**
+`chrome.storage.local` on your machine. Chapters sync only if you configure Turso. Nothing goes to a server of ours — there isn't one.
 
-## Setup
+**Why did my chapter list come out empty?**
+Almost always the Editor format: each line must start with `MM:SS` or `HH:MM:SS`. See [troubleshooting.md](troubleshooting.md).
 
-**Can I use a local model?**
-Yes — **Custom** provider, base URL `http://localhost:11434/v1` (Ollama) or `http://localhost:1234/v1` (LM Studio), any non-empty key.
+**How do updates work?**
+Install the CRX from a release once and Chrome polls that release's `updates.xml` every few hours. See [auto-update.md](auto-update.md).
 
-**Which model should I pick?**
-A 128k-context instruction-following model. Enable **Disable chunking** for a single-pass result; keep chunking for small or local models.
-
-**Why does AIKit come preconfigured?**
-It is the author's default path (Claude Code protocol, Qwen models). Any OpenAI-compatible endpoint works identically.
-
-**Do I have to use Turso?**
-No. Lists persist locally. Turso only adds cross-device sync.
-
-## Behaviour
-
-**Why does it refuse an untimed transcript?**
-Because every chapter would collapse to `00:00`. Untimed text is treated as a failure, not a result.
-
-**Why did my chapters stop at 30 minutes?**
-A chunk failed and the merge aborted. Check the progress messages and the service worker console.
-
-**Why are some questions missing?**
-The AI only sees the transcript. If a question was never spoken (it was only on screen), there is nothing to timestamp.
-
-**Can I edit the timestamps?**
-Yes, in the Editor. Edit the table, then **☁️ Save** to overwrite the stored list.
-
-**Does it post comments without asking?**
-Only on **Save** with the comment toggle on, or when **Auto Save & Comment** is enabled.
-
-**Will it slow down YouTube?**
-No polling of the player. The panel mounts once and reacts to navigation; heavy work is in the service worker.
-
-## Troubleshooting
-
-**"NO VIDEO" appears.**
-Reload the tab. The ID resolver covers `/watch`, `/live/`, `/shorts/`, `/embed/`, `/v/` and the canonical link; a reload re-runs it.
-
-**"NO TRANSCRIPT" appears.**
-Captions are disabled or the panel did not open. Open *Show transcript* manually once, then retry. Embeds always use TranscriptAPI.
-
-**SponsorBlock returns 403.**
-You pasted the public user ID. Use the private 32-character UUID.
-
-**SponsorBlock returns 409.**
-Those segments already exist. Nothing to fix.
-
-**The chime is silent.**
-Check the tab is not muted and the volume slider is above 0; press **Test** in Settings.
-
-**Chapters look wrong after a YouTube update.**
-Update the extension — extraction has three fallbacks, but a large redesign can still need a new selector.
-
-## Project
-
-**Can I use this in my own product?**
-Yes, under the MIT + attribution terms in [LICENSE](../LICENSE). Keep the credit and the link.
-
-**Does it work on Firefox?**
-Not yet. See [architecture.md](architecture.md) for the specific blockers.
-
-**How do I contribute?**
-Read [CONTRIBUTING.md](../CONTRIBUTING.md). Prompt changes must be mirrored into `docs/toolkit/`.
+**Can I use it on Edge or Brave?**
+Yes — anything Chromium with Manifest V3.

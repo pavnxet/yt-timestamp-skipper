@@ -169,7 +169,7 @@ All options live in the **⚙️ Settings** tab inside the dashboard.
 | Custom profiles | Named endpoint + key + model bundles you can switch between | — |
 | Disable chunking | Send the whole transcript in one pass (for 128k-context models) | Off |
 | Turso Database | `libsql://…` URL and auth token | Optional |
-| TranscriptAPI key | Used when YouTube's transcript is unavailable, and always for embeds | Built-in key |
+| TranscriptAPI key | Used when YouTube's transcript is unavailable, and always for embeds | **Your own key — required** |
 | SponsorBlock private ID | Required to upload segments | Optional |
 | Sound alert | Chime, volume, custom sound file | On |
 | Mini floating player | Small bottom widget with previous / next | Off |
@@ -223,7 +223,7 @@ There is also a free **prompt toolkit** in [docs/toolkit/](docs/toolkit/SKILL.md
 ## ❓ FAQ
 
 **Does it work without an API key?**
-Not for AI chapters — you need some OpenAI-compatible endpoint. AIKit ships preconfigured; OpenRouter and custom endpoints need your own key. Everything else (transcript capture, manual chapters, SponsorBlock marking, Turso sync) works without AI.
+Yes — that is the default. **Manual mode** puts the chapter-writing skill on your clipboard so you can use any free AI site, then paste the answer back. Turning on **Use my own AI API** switches to in-extension generation (AIKit, OpenRouter or any OpenAI-compatible endpoint). There is no built-in key of any kind: you supply your own AI key and your own TranscriptAPI key.
 
 **Does it work on Shorts, live streams and embedded players?**
 Yes. Video IDs are resolved from `/watch`, `/live/`, `/shorts/`, `/embed/`, `/v/` and the canonical link. Live streams have no transcript until the stream ends, so chapters there need the TranscriptAPI path.

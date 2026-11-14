@@ -1,54 +1,26 @@
 # Getting started
 
-From zero to a clickable chapter list in about five minutes.
+## What this extension is
 
-## Before you begin
+A Chrome extension that gives long YouTube lectures a real chapter list: question starts, correct-option reveals, explanation starts, and sponsor segments you can skip. It also draws a chapter card over the player as each chapter begins.
 
-| You need | Why |
-| :--- | :--- |
-| Chrome, Edge, Brave, Opera or Vivaldi (current stable) | The extension is Manifest V3 |
-| A YouTube lecture with captions available | Chapters are built from the transcript |
-| An AI endpoint — AIKit, OpenRouter or your own | Chapter generation is an AI call |
-| Optional: a SponsorBlock private ID | Only if you want to upload sponsor segments |
-| Optional: a Turso database | Only if you want cloud sync |
+## The five-minute path
 
-## Step 1 — Install the extension
+1. **Install** — see [installation.md](installation.md).
+2. **Open any long video.** The ⚡ launcher appears bottom-right; click it to open the panel.
+3. **Get the transcript** — **📝 Editor → 📜 Get transcript**. This pulls YouTube's captions with timestamps.
+4. **Turn it into chapters**, one of two ways:
+   - **Manual (default):** press **🧠 Copy skill**, paste into ChatGPT/Gemini/Claude, then paste the reply back into the Editor.
+   - **API:** add your key in Settings, then press **⚡ Generate everything**.
+5. **Play the video.** The Chapters tab fills in, the seek bar grows markers, and a glass card names each chapter as playback reaches it.
 
-Follow [installation.md](installation.md). Short version: `chrome://extensions/` → **Developer mode** → **Load unpacked** → pick the repo folder.
+## What you get on screen
 
-## Step 2 — Open the panel
+- **Chapter list** in the panel, filterable by Questions / Answers / Explain.
+- **Markers** on the seek bar. Hover one to see its timestamp and name.
+- **Chapter card** — a small glass popup that rises from the seek bar when playback crosses a chapter, then dismisses itself. Works in fullscreen.
+- **Keyboard skipping** — jump to the next or previous chapter without touching the mouse.
 
-Open any YouTube video and click the **⚡** button on the page, or the extension icon in the toolbar. The panel docks on the right side of the player.
+## No API key? That is the default
 
-If nothing appears, reload the tab once — content scripts only attach on page load.
-
-## Step 3 — Choose a provider
-
-Open **⚙️ Settings → AI Provider**:
-
-- **AIKit** (default) — paste your AIKit token.
-- **OpenRouter** — paste your OpenRouter key and the model slug, e.g. `qwen/qwen-2.5-72b-instruct`.
-- **Custom** — base URL, key, model. Save it as a named profile if you use more than one.
-
-Hit **Verify** to confirm the endpoint answers before you spend a real call on a long lecture.
-
-## Step 4 — Generate chapters
-
-In the **Editor** tab:
-
-1. **📜 Get transcript** — fills the editor with timestamped lines.
-2. **Generate** — sends the transcript to your provider and parses the returned table.
-3. Watch the progress bar: long lectures are split into 30-minute chunks and merged.
-
-## Step 5 — Use the chapters
-
-- Cards appear in the **Chapters** tab; markers appear on the YouTube progress bar.
-- `]` jumps to the next chapter, `[` goes back.
-- Section chips (**Questions**, **Answers**, **Explain**) change what the list and the hotkeys target.
-- **☁️ Save** writes the list to Turso; **💬 Comment** posts it under the video.
-
-## What to do next
-
-- Learn the filter behaviour in [chapters-and-filters.md](chapters-and-filters.md).
-- Set up cloud sync in [turso-sync.md](turso-sync.md).
-- Turn on auto-generation in [configuration.md](configuration.md) so every lecture in a playlist is ready before you start watching.
+Manual mode is on out of the box. Nothing in the extension needs a key except the optional in-app AI. See [ai-providers.md](ai-providers.md#manual-mode-no-api-key).

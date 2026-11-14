@@ -1,59 +1,25 @@
-# Chapters and filters
+# Chapters, markers and filters
 
-## The chapter model
+## The Editor is the source of truth
 
-Each question in the video becomes one chapter with up to three timestamps:
+The **📝 Editor** tab holds one timestamp per line. Every change re-parses instantly and updates the chapter list, the seek-bar markers and the skip targets.
 
-| Field | Meaning | Used by |
-| :--- | :--- | :--- |
-| **Question start** | Where the question is read (including any lead-in) | The `Questions` chip, `Q` markers |
-| **Correct option** | Where the answer is revealed, e.g. `(B)` | The `Answers` chip, `A` markers |
-| **Explanation start** | Where the discussion of the options begins | The `Explain` chip, `E` markers |
+## The chapter card
 
-A row may leave a field as `N/A` — a question with no explanation, for example. The auto-comment falls back to the explanation time when the option time is `N/A`.
+When playback crosses a chapter timestamp, a small glass card rises out of the seek bar, anchored above that chapter's marker, showing the chapter name. It dismisses itself after about 3.6 seconds and never takes a click.
 
-## Reading the table
+- Works in fullscreen and theatre mode.
+- Follows your active filter — filter to Questions only and only questions raise a card.
+- Turn it off in **Settings → Show chapter card during playback**.
 
-The AI returns a Markdown table; the parser converts it into cards. If you edit the table by hand, keep the header and the column order intact — the parser keys on them.
+## Hovering a marker
 
-## Section chips
+Hover any chapter marker on the seek bar to see `2:29:15 │ Q38: Question Start (Ans: D: 75s)` — the chapter's own timestamp, then its name. The probe listens on the progress bar rather than the markers, so seek-dragging is untouched.
 
-The chips at the top of the **Chapters** tab are independent toggles, not radio buttons.
+## Filters
 
-| Selection | List shows | `]` / `[` jump to |
-| :--- | :--- | :--- |
-| Questions | Question starts | Question starts |
-| Answers | Option reveals | Option reveals |
-| Explain | Explanation starts | Explanation starts |
-| Questions + Answers | Both | Both, interleaved in video order |
-| All (default) | Everything | Everything |
+Chips for **Questions**, **Answers** and **Explain** toggle independently, so you can show only question starts, only answer reveals, or any combination. **All** resets.
 
-- Turning every chip off falls back to **All** — the list never becomes empty.
-- **All** resets to the default selection.
-- The filter applies to the progress-bar markers too, so a revision pass shows only answer marks.
+## How chapters are detected
 
-Typical use: pick **Questions + Answers** for a timed mock-test revision, then switch to **Explain** when you get one wrong.
-
-## Progress-bar markers
-
-Markers are drawn on YouTube's own progress bar, coloured per section. Hovering shows the label; clicking seeks. They are re-drawn when the filter changes, when chapters are regenerated, and after YouTube's SPA navigation.
-
-## Auto-scroll
-
-The chapter list tracks playback: the current chapter is highlighted and scrolled into view. This is a scroll, not a seek — it never moves the video.
-
-## Playback modes
-
-| Mode | Behaviour |
-| :--- | :--- |
-| Normal | Ordinary YouTube playback |
-| Chapter loop | Repeats the current chapter until you turn it off |
-
-Chapter loop is for drilling one hard derivation or one long explanation.
-
-## Editing and re-running
-
-- **Editor** → edit the transcript or the table → **Generate** again.
-- **📋 Copy** puts the current table on the clipboard.
-- **📥 Paste** accepts a table you built elsewhere (the same format the toolkit prompts produce).
-- **☁️ Save** writes the current list to Turso, overwriting the stored list for that video ID.
+Playback is sampled about four times a second and compared against the previous sample. A chapter fires when its timestamp falls between the two samples. A jump larger than 1.5 seconds is treated as a seek, so scrubbing across ten chapters raises no cards at all.

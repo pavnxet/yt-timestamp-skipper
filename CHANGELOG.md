@@ -15,6 +15,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 - README rewritten for discoverability: keyword-led title and summary, badges, table of contents, feature index, configuration and shortcut tables, FAQ, browser support matrix.
 - Landing page metadata: canonical URL, Open Graph and Twitter cards, JSON-LD `SoftwareApplication`, `robots.txt` and `sitemap.xml`.
 
+## [3.9.0]
+
+### Changed
+- **Breaking:** the shared default TranscriptAPI key has been removed. Every user now supplies their own in **Settings → TranscriptAPI key**. Videos with working YouTube captions are unaffected; videos without captions, and embedded players, now fail with a clear message instead of silently using a public key.
+- Documentation rewritten across `docs/` and the landing page to match the current feature set.
+
+### Added
+- `AGENTS.md` and the `learning/` memory hierarchy, plus a secret/PII scanner, git hooks and a CI safety scan.
+
 ## [3.8.1]
 
 ### Fixed
