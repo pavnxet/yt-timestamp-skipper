@@ -15,6 +15,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 - README rewritten for discoverability: keyword-led title and summary, badges, table of contents, feature index, configuration and shortcut tables, FAQ, browser support matrix.
 - Landing page metadata: canonical URL, Open Graph and Twitter cards, JSON-LD `SoftwareApplication`, `robots.txt` and `sitemap.xml`.
 
+## [3.7.1]
+
+### Fixed
+- The chapter card never appeared in normal view. `getBoundingClientRect()` returns viewport coordinates, but the anchor maths was handed the player's height, so `bottom` went negative and the card rendered below the screen.
+- The card was invisible in fullscreen. It was parented to `.html5-video-player`, which clips with `overflow: hidden`; it now attaches to `document.fullscreenElement` (or `body`), so it survives fullscreen.
+- Hovering a chapter marker showed no tooltip. The probe bound once at boot, and if the progress bar had not rendered yet it never attached; it now retries until the bar exists.
+
+### Changed
+- The card is smaller and uses dark glass, so it stays readable over a light page as well as a dark video.
+
 ## [3.7.0]
 
 ### Added
