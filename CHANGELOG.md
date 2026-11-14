@@ -15,6 +15,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 - README rewritten for discoverability: keyword-led title and summary, badges, table of contents, feature index, configuration and shortcut tables, FAQ, browser support matrix.
 - Landing page metadata: canonical URL, Open Graph and Twitter cards, JSON-LD `SoftwareApplication`, `robots.txt` and `sitemap.xml`.
 
+## [3.7.0]
+
+### Added
+- **Chapter moment card.** When playback crosses a chapter timestamp, a glass card rises out of the seek bar anchored above that chapter's marker, names it, and dismisses itself after 3.6 s. It sits on the fullscreen element so it survives fullscreen, and uses `pointer-events: none` so it can never swallow a click on the video.
+- Hovering a chapter marker on the seek bar now shows that chapter's name in a tooltip. The probe listens on the progress bar rather than the markers, so seek-dragging is untouched.
+- Settings toggle **Show chapter card during playback**, on by default.
+
+### Notes
+- No new permissions. The card follows the active chapter filter, so filtering to Questions + Answers also limits which chapters raise a card.
+
 ## [3.6.2]
 
 ### Fixed
