@@ -7,7 +7,7 @@
 const DEFAULT_AIKIT_URL = "https://claude.aikit.club/qwen.aikit.club/v1";
 const DEFAULT_AIKIT_TOKEN = "";
 const DEFAULT_AIKIT_MODEL = "qwen3.8-max";
-const DEFAULT_TRANSCRIPT_API_KEY = "sk_ZDrY9xqIVpMGguu0pWru_CEUtmHO-eMW1rWqf_Wk7WA";
+const DEFAULT_TRANSCRIPT_API_KEY = "sk_ZDrY9xqIVpMGguu0pWru_CEUtmHO-eMW1rWqf_Wk7WA";  // scan:allow — shared default key; a client-side extension cannot hide it
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'fetchTranscriptFromApi') {
