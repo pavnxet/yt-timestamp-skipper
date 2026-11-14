@@ -15,6 +15,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 - README rewritten for discoverability: keyword-led title and summary, badges, table of contents, feature index, configuration and shortcut tables, FAQ, browser support matrix.
 - Landing page metadata: canonical URL, Open Graph and Twitter cards, JSON-LD `SoftwareApplication`, `robots.txt` and `sitemap.xml`.
 
+## [3.8.0]
+
+### Added
+- **Generation mode.** A setting chooses how chapters get written. In **API mode** nothing changes; in **Manual mode** every AI-provider control is hidden and a **🧠 Copy skill** button appears in the Editor. It copies the `yt-allinone` skill together with the video URL and the transcript as one paste-ready prompt, so anyone without an API key can use a free AI website.
+- Manual mode is the default for new installs.
+- The Chapters empty state now points at the right button for the active mode.
+
+### Changed
+- Switching to Manual mode also clears "Generate chapters when a video opens", so a hidden toggle cannot fire on the next video.
+- Both generate handlers early-return in Manual mode rather than relying on the buttons being hidden.
+
 ## [3.7.1]
 
 ### Fixed
