@@ -1,5 +1,5 @@
 /**
- * YT Smart Chapters Pro v3.6.1
+ * YT Smart Chapters Pro v3.6.2
  * made with 💖 by pavnxet
  * GitHub: https://github.com/pavnxet/yt-timestamp-skipper
  */
@@ -2637,7 +2637,9 @@ function updateStateFromText(text) {
         if (/^\|?[\s\-:|]+\|?$/.test(line.trim())) return;
 
         // If it's a markdown table row: | Q# | Question Start | Correct Option Timestamp | Answer Start | Correct Option |
-        if (line.includes('|')) {
+        // A leading pipe is what makes it a table — chapter lines may legitimately contain
+        // "|" in their title (e.g. "... [MCQ] | to bell the cat = ...") and must fall through.
+        if (line.trim().startsWith('|') && line.split('|').length >= 3) {
             const cells = line.split('|').map(c => c.trim()).filter(c => c.length > 0);
             if (cells.length >= 2) {
                 // Header row skip & SponsorBlock table skip
@@ -3615,7 +3617,7 @@ function formatCommentText(rawText) {
         
         lines.forEach(line => {
             if (/^\|?[\s\-:|]+\|?$/.test(line)) return;
-            if (line.includes('|')) {
+            if (line.trim().startsWith('|') && line.split('|').length >= 3) {
                 const cells = line.split('|').map(c => c.trim()).filter(c => c.length > 0);
                 if (cells.length >= 2) {
                     if (cells[0].toLowerCase().includes('q#') || cells[1].toLowerCase().includes('question start')) return;
