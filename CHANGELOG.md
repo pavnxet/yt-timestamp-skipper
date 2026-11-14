@@ -15,6 +15,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 - README rewritten for discoverability: keyword-led title and summary, badges, table of contents, feature index, configuration and shortcut tables, FAQ, browser support matrix.
 - Landing page metadata: canonical URL, Open Graph and Twitter cards, JSON-LD `SoftwareApplication`, `robots.txt` and `sitemap.xml`.
 
+## [3.8.1]
+
+### Fixed
+- The chapter marker tooltip showed only the chapter name. It now shows the chapter's own timestamp beside it — for example `2:29:15 │ Q38: Question Start (Ans: D: 75s)` — with the time in a dim monospace badge, separated from the name by a hairline.
+
 ## [3.8.0]
 
 ### Added
