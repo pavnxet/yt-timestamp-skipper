@@ -28,3 +28,14 @@ auth.json
 out_*.txt
 verify_script.js
 test_turso.py
+
+# ==========================================
+# Agent memory (committed on purpose - never ignore)
+# ==========================================
+!learning/
+!learning/**
+.env
+.env.*
+!.env.example
+*.key
+*.cert

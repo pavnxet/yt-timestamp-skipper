@@ -1,0 +1,3 @@
+#!/bin/sh
+# Pre-push hook: Scan outgoing commits for secrets, tokens, and personal info
+python scripts/scan_sensitive.py --pre-push "$@"
