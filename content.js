@@ -1,5 +1,5 @@
 /**
- * YT Smart Chapters Pro v3.7.0
+ * YT Smart Chapters Pro v3.7.1
  * made with 💖 by pavnxet
  * GitHub: https://github.com/pavnxet/yt-timestamp-skipper
  */
@@ -2821,10 +2821,10 @@ function chapterAtX(x, barRect, duration, chapters, tolPx) {
 }
 
 // The element that survives fullscreen — body is not painted once fullscreen starts.
+// Only body or the fullscreen element. Never .html5-video-player — it clips
+// (overflow:hidden) and its transform turns position:fixed into "relative to me".
 function overlayHost() {
-    return document.fullscreenElement ||
-        document.querySelector('.html5-video-player') ||
-        document.body;
+    return document.fullscreenElement || document.body;
 }
 
 function momentsChapters() {
@@ -2836,7 +2836,9 @@ function momentsChapters() {
 }
 
 function progressBarEl() {
-    return document.querySelector('.ytp-progress-list') || document.querySelector('.ytp-progress-bar');
+    return document.querySelector('.ytp-progress-bar') ||
+        document.querySelector('.ytp-progress-list') ||
+        document.querySelector('.ytp-progress-bar-container');
 }
 
 function ensureChapterCard() {
@@ -2887,7 +2889,9 @@ function showChapterCard(ch) {
     if (!chapterCardEnabled || !ch) return;
     const bar = progressBarEl();
     const video = momentsVideo || document.querySelector('video');
-    if (!bar || !video || !video.duration) return;
+    if (!video || !video.duration) return;
+
+    initMarkerProbe();
 
     const el = ensureChapterCard();
     const host = overlayHost();
@@ -2896,12 +2900,14 @@ function showChapterCard(ch) {
     el.querySelector('.yt-chapter-card__title').textContent = ch.title;
     el.classList.remove('on');
 
-    const hostRect = host.getBoundingClientRect();
-    const viewport = host === document.body
-        ? { width: window.innerWidth, height: window.innerHeight }
-        : { width: hostRect.width, height: hostRect.height };
+    // Always viewport coordinates: getBoundingClientRect() is viewport-relative,
+    // so the viewport must be too, whatever the host is.
+    const viewport = { width: window.innerWidth, height: window.innerHeight };
+    const barRect = bar
+        ? bar.getBoundingClientRect()
+        : { left: 0, width: viewport.width, top: viewport.height - 60 };
 
-    const a = anchorFor(ch.t, video.duration, bar.getBoundingClientRect(), el.offsetWidth, viewport, 40, 12);
+    const a = anchorFor(ch.t, video.duration, barRect, el.offsetWidth, viewport, 34, 10);
     el.style.left = a.left + 'px';
     el.style.bottom = a.bottom + 'px';
     const tail = el.querySelector('.yt-chapter-card__tail');
@@ -2925,6 +2931,7 @@ function showChapterCard(ch) {
 function onMomentTick() {
     const v = momentsVideo;
     if (!v || !v.duration) return;
+    initMarkerProbe(); // the progress bar may not have existed when we first booted
     const now = v.currentTime;
     if (momentLast === null) { momentLast = now; return; }
     const prev = momentLast;
@@ -2952,11 +2959,8 @@ function initMarkerProbe() {
         if (tip.parentElement !== host) host.appendChild(tip);
         tip.textContent = hit.title;
 
-        const hostRect = host.getBoundingClientRect();
-        const viewport = host === document.body
-            ? { width: window.innerWidth, height: window.innerHeight }
-            : { width: hostRect.width, height: hostRect.height };
-        const a = anchorFor(hit.t, v.duration, rect, tip.offsetWidth, viewport, 22, 8);
+        const viewport = { width: window.innerWidth, height: window.innerHeight };
+        const a = anchorFor(hit.t, v.duration, rect, tip.offsetWidth, viewport, 18, 8);
         tip.style.left = a.left + 'px';
         tip.style.bottom = a.bottom + 'px';
         tip.classList.add('on');
