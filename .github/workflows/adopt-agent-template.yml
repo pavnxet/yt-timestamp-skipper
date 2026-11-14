@@ -5,6 +5,9 @@ on:
       - '.github/workflows/adopt-agent-template.yml'
 permissions:
   contents: write
+  # Adding .github/workflows/secret-scan.yml needs this; contents:write alone
+  # makes the push fail with "refusing to allow a GitHub App to create ... workflow".
+  workflows: write
 jobs:
   adopt:
     runs-on: ubuntu-latest
