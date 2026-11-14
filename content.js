@@ -1,5 +1,5 @@
 /**
- * YT Smart Chapters Pro v3.8.0
+ * YT Smart Chapters Pro v3.8.1
  * made with 💖 by pavnxet
  * GitHub: https://github.com/pavnxet/yt-timestamp-skipper
  */
@@ -2908,6 +2908,12 @@ function ensureChapterTip() {
     if (chapterTipEl && chapterTipEl.isConnected) return chapterTipEl;
     const el = document.createElement('div');
     el.className = 'yt-chapter-tip';
+    const time = document.createElement('span');
+    time.className = 'yt-chapter-tip__time';
+    const label = document.createElement('span');
+    label.className = 'yt-chapter-tip__label';
+    el.appendChild(time);
+    el.appendChild(label);
     chapterTipEl = el;
     return el;
 }
@@ -2989,7 +2995,14 @@ function initMarkerProbe() {
 
         const host = overlayHost();
         if (tip.parentElement !== host) host.appendChild(tip);
-        tip.textContent = hit.title;
+        const timeEl = tip.querySelector('.yt-chapter-tip__time');
+        const labelEl = tip.querySelector('.yt-chapter-tip__label');
+        if (timeEl && labelEl) {
+            timeEl.textContent = formatTime(hit.t);
+            labelEl.textContent = hit.title;
+        } else {
+            tip.textContent = formatTime(hit.t) + '  ' + hit.title;
+        }
 
         const viewport = { width: window.innerWidth, height: window.innerHeight };
         const a = anchorFor(hit.t, v.duration, rect, tip.offsetWidth, viewport, 18, 8);
