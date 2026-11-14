@@ -1,5 +1,5 @@
 /**
- * YT Smart Chapters Pro v3.7.1
+ * YT Smart Chapters Pro v3.8.0
  * made with 💖 by pavnxet
  * GitHub: https://github.com/pavnxet/yt-timestamp-skipper
  */
@@ -233,7 +233,7 @@ function createDashboard() {
                 <div class="yt-sk-empty-placeholder">
                     <div class="yt-sk-empty-icon">📌</div>
                     <div class="yt-sk-empty-title">No chapters yet</div>
-                    <div class="yt-sk-empty-desc">Click <b>⚡ Generate everything</b> at the top, or paste timestamps in the <b>📝 Editor</b> tab.</div>
+                    <div class="yt-sk-empty-desc" id="yt-sk-empty-desc">Click <b>⚡ Generate everything</b> at the top, or paste timestamps in the <b>📝 Editor</b> tab.</div>
                 </div>
             </div>
 
@@ -252,6 +252,7 @@ function createDashboard() {
             <div class="yt-sk-editor-toolbar">
                 <button class="yt-sk-btn" id="yt-sk-btn-fetch-transcript" title="Pull this video's transcript, with timestamps, straight from YouTube">📜 Get transcript</button>
                 <button class="yt-sk-btn yt-sk-action-btn-primary" id="yt-sk-btn-ai" title="Send the transcript to your AI provider and get chapter names back">✨ Write chapters</button>
+                <button class="yt-sk-btn yt-sk-hidden" id="yt-sk-btn-copy-skill" title="Copy the AI skill, ready to paste into a free AI site">🧠 Copy skill</button>
             </div>
             <div class="yt-sk-editor-toolbar">
                 <button class="yt-sk-btn" id="yt-sk-btn-copy" title="Copy the raw editor text">📋 Copy</button>
@@ -362,6 +363,21 @@ function createDashboard() {
         <div class="yt-sk-tab-content" id="yt-sk-tab-settings">
 
             <div class="yt-sk-card">
+                <div class="yt-sk-section-title">✨ How chapters get written</div>
+                <div class="yt-sk-section-sub">Use your own AI key, or copy the skill into a free AI website and paste the result back.</div>
+                <div class="yt-sk-toggle-row">
+                    <div class="yt-sk-toggle-text">
+                        <div class="yt-sk-toggle-title">Use my own AI API</div>
+                        <div class="yt-sk-toggle-desc">Off = manual mode. The API buttons hide and a 🧠 Copy skill button appears in the Editor.</div>
+                    </div>
+                    <label class="yt-sk-switch">
+                        <input type="checkbox" id="yt-sk-use-own-api">
+                        <span class="yt-sk-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="yt-sk-card">
                 <div class="yt-sk-section-title">🎨 Theme</div>
                 <div class="yt-sk-section-sub">Recolours the panel. Each theme has its own light and dark variant, so it still follows your YouTube theme.</div>
                 <select id="yt-sk-theme-select" class="yt-sk-select">
@@ -399,7 +415,7 @@ function createDashboard() {
                 </div>
             </div>
 
-            <div class="yt-sk-card">
+            <div class="yt-sk-card" id="yt-sk-card-ai-provider">
                 <div class="yt-sk-section-title">🤖 AI provider</div>
                 <div class="yt-sk-section-sub">Where the chapter writing happens. Pick one and fill in its details below.</div>
                 <select id="yt-sk-ai-provider" class="yt-sk-select">
@@ -509,7 +525,7 @@ function createDashboard() {
 
             <div class="yt-sk-card">
                 <div class="yt-sk-section-title">⚡ Automation</div>
-                <div class="yt-sk-toggle-row">
+                <div class="yt-sk-toggle-row" id="yt-sk-row-auto-generate">
                     <div class="yt-sk-toggle-text">
                         <div class="yt-sk-toggle-title">Generate chapters when a video opens</div>
                         <div class="yt-sk-toggle-desc">Fetch the transcript and write chapters automatically</div>
@@ -1005,6 +1021,7 @@ function createDashboard() {
         'customUrl', 'customApiKey', 'customModel', 'customProviderName', 'customProfiles', 'customActiveProfileId', 'disableChunking',
         'shortcuts',
         'autoComment', 'showMiniWidget', 'autoGenerate', 'autoSaveSync', 'autoUploadSb', 'autoCopyTranscript', 'uiTheme',
+        'generationMode',
         'sbUserId', 'sbCategoryMode',
         'transcriptApiKey',
         'soundEnabled', 'soundUrl', 'soundVolume', 'soundCustomData'
@@ -1021,6 +1038,10 @@ function createDashboard() {
                 chrome.storage.local.set({ autoGenerate: autoGenToggle.checked });
             };
         }
+
+        // Generation mode: API or manual skill copy
+        applyGenerationMode(res.generationMode || 'manual');
+        initGenerationMode();
 
         // Theme
         const themeSelect = document.getElementById('yt-sk-theme-select');
@@ -1402,6 +1423,7 @@ function createDashboard() {
             autoGenerate: autoGenerate,
             autoSaveSync: autoSaveSync,
             autoCopyTranscript: autoCopyTranscript,
+            generationMode: generationMode,
             showChapterCard: showChapterCard,
             uiTheme: uiTheme,
             showMiniWidget: miniChecked,
@@ -1509,6 +1531,10 @@ function createDashboard() {
     }
 
     document.getElementById('yt-sk-btn-ai').onclick = async () => {
+        if (generationMode !== 'api') {
+            showToast('Manual mode is on — use 🧠 Copy skill in the Editor instead.', '🧠', 4500);
+            return;
+        }
         let text = textarea.value;
 
         // If textarea is empty, automatically fetch the transcript with timestamps first!
@@ -1709,7 +1735,13 @@ function createDashboard() {
     };
 
     if (headerDualScanBtn) {
-        headerDualScanBtn.onclick = runDualScan;
+        headerDualScanBtn.onclick = () => {
+            if (generationMode !== 'api') {
+                showToast('Manual mode is on — use 🧠 Copy skill in the Editor instead.', '🧠', 4500);
+                return;
+            }
+            runDualScan();
+        };
     }
 
     chrome.runtime.onMessage.addListener((msg) => {
@@ -2514,7 +2546,7 @@ function createDashboard() {
             titleEl.textContent = 'No chapters yet';
             const descEl = document.createElement('div');
             descEl.className = 'yt-sk-empty-desc';
-            descEl.textContent = 'Click "\u26A1 Generate everything" at the top, or paste timestamps in the Editor tab.';
+            descEl.innerHTML = emptyDescHtml();
             emptyEl.appendChild(iconEl);
             emptyEl.appendChild(titleEl);
             emptyEl.appendChild(descEl);
@@ -3336,6 +3368,7 @@ async function checkAndTriggerAutoGeneration() {
         'allInOneMode', 'autoSaveSync', 'autoComment', 'autoUploadSb', 'tursoUrl', 'tursoToken', 'sbUserId', 'sbCategoryMode'
     ], async (res) => {
         if (!isExtValid()) return;
+        if ((res.generationMode || 'manual') !== 'api') return;
         if (!res.autoGenerate) return;
 
         // Ensure AI key/token is available
@@ -4268,4 +4301,122 @@ function collectTranscriptSegments(panel) {
 
     if (lines.length === 0) return fallbackWalkTranscript(panel);
     return lines.join('\n');
+}
+
+// ---------------------------------------------------------------------------
+// Generation mode — API vs manual skill copy.
+// Manual mode hides every AI-provider control and offers the skill as a
+// ready-to-paste prompt for a free AI website instead.
+// ---------------------------------------------------------------------------
+let generationMode = 'manual';
+
+const YT_SKILL_MD = "---\nname: yt-allinone\ndescription: Three-in-one toolkit for timestamped YouTube, lecture, or podcast transcripts (Hindi, Hinglish, or English) to extract YouTube-compatible chapters, classroom-cut SponsorBlock segments, and strict MCQ/numerical question timestamps—triggers on @yt-allinone, YouTube URLs, or pasted timestamped transcripts.\n---\n# YouTube Transcript Toolkit (`yt-allinone`)\n\nOne skill, three independent jobs over the same input: a timestamped lecture, podcast, or YouTube video transcript. Each job reads the whole transcript and returns a strict, copy-ready structure incorporating high-precision educational editing rules.\n\n## 1. Default Execution, Strict Code-Block-Only & Language Rules\n\n- **STRICT CODE-BLOCK-ONLY OUTPUT (CRITICAL):** Your entire response MUST contain **ONLY** the three requested ` ```text ... ``` ` code blocks (with minimal section headers `## मोड 1: अध्याय (Chapters)`, `## मोड 2: स्पॉन्सरब्लॉक खंड (SponsorBlock Segments)`, and `## मोड 3: बहुविकल्पीय एवं आंकिक प्रश्न (MCQ / Question Timestamps)` above each block). **DO NOT** output any introductory text, closing remarks, notes, bullet points, key terms, revision lists, or Markdown tables outside the code blocks.\n- **Run All 3 Modes by Default:** When the user shares a YouTube URL or timestamped transcript with `@yt-allinone` (or asks to extract chapters, SponsorBlock cuts, or MCQ timestamps without restricting to a single mode), **always execute all three modes sequentially** in a single response under these exact headings:\n  1. `## मोड 1: अध्याय (Chapters)`\n  2. `## मोड 2: स्पॉन्सरब्लॉक खंड (SponsorBlock Segments)`\n  3. `## मोड 3: बहुविकल्पीय एवं आंकिक प्रश्न (MCQ / Question Timestamps)` *(Only run a single mode if the user explicitly asks for just one, e.g., \"only give SponsorBlock\").*\n- **Strict Hindi Content Delivery:** All chapter titles and SponsorBlock labels MUST be delivered in Hindi (Devanagari script), keeping standard scientific/technical nouns, symbols, formulas, and tags in English/LaTeX where appropriate (e.g., `प्रकीर्णन (Scattering)`, `अपवर्तनांक ($\\mu$)`).\n\n---\n\n## 2. Resilient Transcript Retrieval, Deduplication & Truncation Rules\n\nWhen given a YouTube URL (`youtube.com/watch?v=...` or `youtu.be/...`) or pasted transcript:\n\n1. **Primary Fetch:** Check available languages via `get_youtube_video_info` or call `get_youtube_transcript` with `language=\"hi,asr-hi,en,asr-en\"`.\n2. **Fallback 1 (404 / No Language Match):** If `get_youtube_video_info` returns a 404 or language-specific fetch fails, immediately call `get_youtube_transcript(video_url=\"<11_char_video_id>\")` **without** the `language` parameter to force default caption track extraction.\n3. **Fallback 2 (Standard Tool):** If custom MCP tools are unavailable, use `youtube:get_video_information`.\n4. **Chunk Deduplication Rule:** When a long transcript is pasted across multiple chunks with overlapping boundary lines, strip duplicate overlapping lines before segmenting so chapters, cuts, and questions are never repeated.\n5. **No Timestamps:** If a pasted transcript has no timestamps, state this plainly and offer a structure-only topic outline.\n6. **Truncated Transcript Rule:** Transcripts can hard-cut mid-sentence anywhere (not just via silence/foreign ASR). Cover only the verified range, flag the last chapter as incomplete if cut mid-sentence, and never guess the remaining content.\n7. **Board Dictation Rule:** Always scan board dictation: it may carry new English-medium exam phrasing never spoken aloud. Never auto-skip dictation.\n\n---\n\n## 3. Timestamp Conversion & Formatting Rules\n\n- **Convert Seconds to `MM:SS` or `HH:MM:SS`:** Raw transcripts often provide timestamps in seconds (e.g., `[1431.12s]`). Convert them accurately:\n  - Total seconds $< 3600$: Format as `MM:SS` (e.g., `[60.55s]` $\\to$ `01:00`, `[1431.12s]` $\\to$ `23:51`).\n  - Total seconds $\\ge 3600$ (Videos over 1 hour): Format as `HH:MM:SS` (e.g., `[3648.16s]` $\\to$ `01:00:48`, `[5220.0s]` $\\to$ `01:27:00`). **Never** write `60:48` or `87:00` for timestamps at or above 60 minutes.\n- **Exactness:** Use only timestamps corresponding to actual lines in the transcript (plus `00:00` for the opening YouTube chapter anchor). Never invent or guess times.\n- **Monotonic Order:** Ensure all timestamps across chapters, SponsorBlock intervals, and questions are strictly increasing.\n\n---\n\n## 4. Mode 1 — अध्याय (Chapters)\n\nProduce a structured chapter map covering the entire educational flow of the lecture.\n\n### Segmentation, YouTube Compatibility & Granularity Rules:\n\n- **YouTube Chapter Compatibility (Mandatory 3 Rules):**\n  1. **Mandatory `00:00` Anchor:** Always start the first line at `00:00` (e.g., `00:00 - कक्षा प्रारंभ / परिचय`, or the opening topic title if actual teaching starts immediately at `00:00`) so YouTube renders the chapter bar.\n  2. **Minimum 3 Chapters:** Always include at least 3 chapters.\n  3. **Minimum 10s Duration:** Ensure every chapter spans at least 10 seconds before the next timestamp.\n- **Content Anchor Rule (`> 00:00`):** `00:00` is the sole structural anchor; **all subsequent chapters (`> 00:00`) must mark actual concept start**, never heading/board-writing/tangent.\n- **Unit of a Chapter:** The unit of a chapter is an **EXAM ENTITY** (\"Will this be asked as a separate question/heading in an exam?\"), not a teaching stretch or board transition.\n- **Distinct Disease / Structure Rule:** Distinct disease/condition entities (e.g., एनीमिया, पॉलीसाइथोमिया, सिकल सेल एनीमिया) or named structures MUST each get their own chapter title even if taught back-to-back. **Merge scope is inward only** (sub-details like definition, cause, symptom fold into that concept's chapter). Never collapse multiple diseases under a blanket heading like \"RBC रोग\".\n- **Hinglish ASR Normalization (Context-Guarded):** Repair obvious auto-caption phonetic corruptions into exam-standard Hindi + English bracketed terms **only when surrounding lecture context confirms the exact term** (e.g., *\"पोली साई थी मिया\"* $\\to$ `पॉलीसाइथेमिया (Polycythemia)`). Never guess or alter into an unverified term when ambiguous.\n- **Granularity:** Aim for **8–15 chapters** for a 30–90 minute lecture. Granularity is a soft guideline; exceed it when independent exam entities require separate chapters.\n- **Revision Test:** Before finalizing, run the revision test: can a student jump directly to the exact disease/topic they need? If they must scrub inside a multi-topic heading, the chapter list has failed.\n\n### Required Output Structure for Mode 1:\n\nOutput **ONLY** a single plain-text code block (` ```text ... ``` `) containing the timestamped chapter list for one-click copying (do NOT output key terms, bullet lists, or revision chapters):\n\n```text\n00:00 - कक्षा प्रारंभ / परिचय\nMM:SS - Chapter Title in Hindi\nMM:SS - Chapter Title in Hindi\n```\n\n---\n\n## 5. Mode 2 — स्पॉन्सरब्लॉक खंड (SponsorBlock — Strict Classroom Cut)\n\nAct as an expert educational video editor. **Objective: Isolate 100% of non-educational segments so the viewer gets pure teaching.**\n\n### Categories & Leading Silence:\n\n- **Leading Silence Rule:** Video leading silence (from `00:00` until the first transcript line) must **ALWAYS** be part of the first `INTRO` segment.\n- **SPONSOR** — Paid brand promotions, external ads.\n- **SELFPROMO** — Promoting paid courses, batches, test series, apps, telegram channels, or YouTube channels.\n- **INTERACTION** — Asking to like, subscribe, share, or comment.\n- **INTRO** — Pre-teaching openers: leading silence (`00:00` to first line), greetings (\"Good morning\", \"Happy New Year\"), celebrations/sweets distribution, syllabus/schedule chit-chat, or attendance talk before the first subject heading or concept starts.\n- **OUTRO** — End-of-class sign-offs, motivational shayari/poems at the end, next-class scheduling, and thank-yous after the last topic concludes.\n- **FILLER** — Mid-lecture non-teaching dead air and tangents:\n  - **Board-Copying Dead Air:** Long silent gaps where the teacher explicitly tells students to copy (*\"लिखो जल्दी लिखो\"*, *\"नोट करो\"*, *\"कर लिया कॉपी?\"*, *\"हटाएं?\"*, *\"चेंज करें?\"*).\n  - **Classroom Banter & Discipline:** Scolding students, discussing who is sitting where, jokes/humor tangents (marriage/life stories), discussing other teachers' classes, or fixing technical/mic/board glitches.\n  - **Silence / Ghost Gaps ($\\ge 45\\text{s}$):** Silent transcript gaps $\\ge 45\\text{s}$ identified as non-teaching pauses via surrounding dialogue.\n\n### Strict Extraction, Heuristic & Merging Rules:\n\n1. **Zero-Fluff Threshold:** Mark everything from `00:00` until actual subject delivery begins as `INTRO` (or `SELFPROMO` if promotional).\n2. **Active Board-Work Protection (Conservative Heuristic):** Because transcripts lack video frames, infer the nature of any $\\ge 45\\text{s}$ gap from dialogue immediately before and after it. Cut as `FILLER` when cues indicate student copy-time or dead air (*\"लिखो\", \"नोट करो\", \"कर लिया?\"*); **keep** when cues indicate silent teacher derivation, step-by-step solving, or diagram drawing. **When in doubt, keep the segment.**\n3. **Clean Boundary & Non-Overlap Rule:** End each cut cleanly at the exact timestamp of the first resumed teaching line (or last removable line) using only existing transcript timestamps—never invent artificial padding. Validate that `End_i <= Start_{i+1}` across all rows so intervals never overlap.\n4. **Merging Rule:** If two removable segments run back-to-back (e.g., board copying immediately followed by classroom jokes or shayari), merge them into **one continuous segment** and assign the highest-priority category: `SPONSOR > SELFPROMO > INTERACTION > INTRO > OUTRO > FILLER`.\n\n### Required Output Structure for Mode 2:\n\nOutput **ONLY** a single plain-text code block (` ```text ... ``` `) containing the merged intervals, one per line (do NOT output a Markdown table or extra explanations):\n\n```text\n[MM:SS]-[MM:SS] CATEGORY\n```\n\n*(If nothing is removable, output `NO REMOVABLE SEGMENTS FOUND` inside the code block).*\n\n---\n\n## 6. Mode 3 — बहुविकल्पीय एवं आंकिक प्रश्न (MCQ / Question Timestamps)\n\nAct as a high-precision question and problem-solving indexer. Extract **ONLY** questions the teacher actually asked/announced in the video (direct verbal asks + board-dictated numericals with full data). Never self-generate questions.\n\n### Per-Question Fields:\n\n- **Question Start:** Timestamp where the instructor begins dictating or displaying the question.\n- **Correct Option Timestamp:** Timestamp where the final answer or correct option is stated/revealed (or `N/A`). Note: `Correct Option Timestamp` may occur *before* `Answer Start` (if revealed upfront) or *after* `Answer Start` (when solved first and announced at the end), provided both are strictly greater than `Question Start`.\n- **Answer Start:** Timestamp where the teacher begins working through the step-by-step solution/explanation on the board (or `N/A`).\n- **Correct Option:**\n  - If options A/B/C/D were given: write the option letter (e.g., `B` or `D (60°, 60°, 60°)`).\n  - If it is a dictated open numerical/conceptual question without A/B/C/D options: write the **concise final answer value** (e.g., `30°`, `v = -30 cm, m = -2`, `4 D (उत्तल)`).\n  - If the instructor notes a printing typo, missing data, or cancels the question live: write `Bonus / Wrong Q`.\n  - If never solved or revealed: write `Unclear`.\n\n### Required Output Structure for Mode 3 (Strict Quiz MCQ Table Format):\n\nDeliver Mode 3 **strictly inside ONE plain-text code block (` ```text ... ``` `)** containing a 5-column table WITH leading and trailing pipes on every row (do NOT add any prose, notes, or text after the code block):\n\n```text\n| Q#  | Question Start | Correct Option Timestamp | Answer Start | Correct Option         |\n|-----|----------------|--------------------------|--------------|------------------------|\n| Q1  | 25:54          | 26:57                    | 27:12        | 30°                    |\n| Q2  | 30:55          | 34:25                    | 34:31        | B (44°)                |\n```\n\n*(No A/B/C/D if open numerical, no prose inside code block. If no questions exist in the video, output `\"No MCQs\"`).*";
+
+const MANUAL_DESC = 'Click <b>🧠 Copy skill</b> in the <b>📝 Editor</b> tab, paste it into a free AI site, then bring the result back.';
+const API_DESC = 'Click <b>⚡ Generate everything</b> at the top, or paste timestamps in the <b>📝 Editor</b> tab.';
+
+function emptyDescHtml() {
+    return generationMode === 'api' ? API_DESC : MANUAL_DESC;
+}
+
+// The skill first (so the model reads its rules before the data), then the video
+// and transcript so the whole thing is one paste.
+function buildSkillPrompt(skill, videoUrl, transcript) {
+    const parts = [];
+    if (videoUrl) parts.push('Video: ' + videoUrl);
+    if (transcript && transcript.trim()) {
+        parts.push('Transcript:\n' + transcript.trim());
+    } else {
+        parts.push('(Paste the video transcript below this line.)');
+    }
+    return (skill || '').trim() + '\n\n---\n\n' + parts.join('\n\n');
+}
+
+function applyGenerationMode(mode) {
+    generationMode = mode === 'api' ? 'api' : 'manual';
+    const apiOnly = [
+        'yt-sk-btn-header-dual-scan',
+        'yt-sk-btn-ai',
+        'yt-sk-row-auto-generate',
+        'yt-sk-card-ai-provider'
+    ];
+    apiOnly.forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.classList.toggle('yt-sk-hidden', generationMode !== 'api');
+    });
+
+    const skillBtn = document.getElementById('yt-sk-btn-copy-skill');
+    if (skillBtn) skillBtn.classList.toggle('yt-sk-hidden', generationMode !== 'manual');
+
+    const toggle = document.getElementById('yt-sk-use-own-api');
+    if (toggle) toggle.checked = generationMode === 'api';
+
+    const desc = document.getElementById('yt-sk-empty-desc');
+    if (desc) desc.innerHTML = emptyDescHtml();
+}
+
+async function copyTextToClipboard(text) {
+    try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(text);
+            return true;
+        }
+    } catch (e) { /* fall through to the legacy path */ }
+    try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.top = '-1000px';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        return ok;
+    } catch (e) {
+        return false;
+    }
+}
+
+async function copySkillForManualAI() {
+    const vid = typeof getCurrentVideoId === 'function' ? getCurrentVideoId() : '';
+    const url = vid ? 'https://www.youtube.com/watch?v=' + vid : '';
+    const ta = document.getElementById('yt-sk-textarea');
+    const transcript = ta ? ta.value : '';
+    const payload = buildSkillPrompt(YT_SKILL_MD, url, transcript);
+    const ok = await copyTextToClipboard(payload);
+    showToast(
+        ok ? '🧠 Skill copied — paste it into ChatGPT or Gemini, then add your transcript.'
+           : 'Could not copy automatically. Select the text in the Editor and copy manually.',
+        ok ? '✅' : '⚠️',
+        5000
+    );
+}
+
+function initGenerationMode() {
+    const toggle = document.getElementById('yt-sk-use-own-api');
+    if (toggle && !toggle.dataset.ytBound) {
+        toggle.dataset.ytBound = '1';
+        toggle.onchange = () => {
+            applyGenerationMode(toggle.checked ? 'api' : 'manual');
+            const patch = { generationMode: generationMode };
+            // Leaving API mode must also disarm auto-generate, or a hidden
+            // toggle would still fire on the next video.
+            if (generationMode === 'manual') patch.autoGenerate = false;
+            chrome.storage.local.set(patch);
+            showToast(
+                generationMode === 'api'
+                    ? 'API mode — your provider writes the chapters.'
+                    : 'Manual mode — use 🧠 Copy skill in the Editor.',
+                '✨',
+                4000
+            );
+        };
+    }
+
+    const skillBtn = document.getElementById('yt-sk-btn-copy-skill');
+    if (skillBtn && !skillBtn.dataset.ytBound) {
+        skillBtn.dataset.ytBound = '1';
+        skillBtn.onclick = copySkillForManualAI;
+    }
 }

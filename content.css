@@ -1979,3 +1979,8 @@ select.yt-sk-select,
         transform: translateX(-50%);
     }
 }
+
+/* Generation mode: elements hidden by the API/manual switch */
+.yt-sk-hidden {
+    display: none !important;
+}
