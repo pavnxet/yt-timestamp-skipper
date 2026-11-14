@@ -1,5 +1,5 @@
 /**
- * YT Smart Chapters Pro v3.6.2
+ * YT Smart Chapters Pro v3.7.0
  * made with 💖 by pavnxet
  * GitHub: https://github.com/pavnxet/yt-timestamp-skipper
  */
@@ -531,6 +531,16 @@ function createDashboard() {
                 </div>
                 <div class="yt-sk-toggle-row">
                     <div class="yt-sk-toggle-text">
+                        <div class="yt-sk-toggle-title">Show chapter card during playback</div>
+                        <div class="yt-sk-toggle-desc">A glass card rises from the seek bar as each chapter starts</div>
+                    </div>
+                    <label class="yt-sk-switch">
+                        <input type="checkbox" id="yt-sk-show-chapter-card" checked>
+                        <span class="yt-sk-slider"></span>
+                    </label>
+                </div>
+                <div class="yt-sk-toggle-row">
+                    <div class="yt-sk-toggle-text">
                         <div class="yt-sk-toggle-title">Auto save &amp; comment</div>
                         <div class="yt-sk-toggle-desc">Save to your database and post the comment when chapters are ready</div>
                     </div>
@@ -1032,6 +1042,16 @@ function createDashboard() {
             };
         }
 
+        // Chapter moment card toggle
+        const chapterCardToggle = document.getElementById('yt-sk-show-chapter-card');
+        if (chapterCardToggle) {
+            chapterCardToggle.checked = res.showChapterCard !== false;
+            chapterCardToggle.onchange = () => {
+                chapterCardEnabled = chapterCardToggle.checked;
+                chrome.storage.local.set({ showChapterCard: chapterCardToggle.checked });
+            };
+        }
+
         // Auto Save to DB & Post Comment toggle
         const autoSaveSyncToggle = document.getElementById('yt-sk-auto-save-sync');
         if (autoSaveSyncToggle) {
@@ -1367,6 +1387,8 @@ function createDashboard() {
         const autoGenerate = document.getElementById('yt-sk-auto-generate')?.checked || false;
         const autoSaveSync = document.getElementById('yt-sk-auto-save-sync')?.checked || false;
         const autoCopyTranscript = document.getElementById('yt-sk-auto-copy-transcript')?.checked || false;
+        const showChapterCard = document.getElementById('yt-sk-show-chapter-card')?.checked ?? true;
+        chapterCardEnabled = showChapterCard;
         const uiTheme = document.getElementById('yt-sk-theme-select')?.value || 'warm';
         const miniChecked = document.getElementById('yt-sk-show-mini-widget')?.checked || false;
         const soundEnabled = document.getElementById('yt-sk-sound-enabled')?.checked ?? true;
@@ -1380,6 +1402,7 @@ function createDashboard() {
             autoGenerate: autoGenerate,
             autoSaveSync: autoSaveSync,
             autoCopyTranscript: autoCopyTranscript,
+            showChapterCard: showChapterCard,
             uiTheme: uiTheme,
             showMiniWidget: miniChecked,
             soundEnabled: soundEnabled,
@@ -2740,6 +2763,243 @@ function renderMarkers() {
     });
 }
 
+// ---------------------------------------------------------------------------
+// Chapter moment card
+// Fires a glass card when playback crosses a chapter timestamp, anchored above
+// that chapter's marker on the seek bar. Hovering a marker names it.
+// ---------------------------------------------------------------------------
+let chapterCardEl = null;
+let chapterTipEl = null;
+let momentsVideo = null;
+let momentLast = null;
+let momentMuteUntil = 0;
+let chapterCardTimer = null;
+let chapterCardEnabled = true;
+let momentLastShown = null;
+let momentsFsBound = false;
+
+const CARD_DWELL = 3600;
+const CARD_SEEK_MUTE = 600;
+
+// Returns the chapter crossed between two playback samples, or null.
+// A jump larger than maxJump (or a backwards step) is a seek, not a crossing.
+function findCrossing(last, now, chapters, opts) {
+    const maxJump = (opts && opts.maxJump) || 1.5;
+    const tolerance = opts && opts.tolerance != null ? opts.tolerance : 0.15;
+    if (!chapters || !chapters.length) return null;
+    if (now < last || now - last > maxJump) return null;
+    for (let i = 0; i < chapters.length; i++) {
+        const at = chapters[i].t + tolerance;
+        if (at > last && at <= now) return chapters[i];
+    }
+    return null;
+}
+
+// Where to put the card so it sits over its marker and stays on screen.
+function anchorFor(t, duration, barRect, cardWidth, viewport, gap, margin) {
+    gap = gap == null ? 18 : gap;
+    margin = margin == null ? 12 : margin;
+    const ratio = duration ? Math.min(Math.max(t / duration, 0), 1) : 0;
+    const rawX = barRect.left + ratio * barRect.width;
+    const half = cardWidth / 2;
+    const left = Math.min(Math.max(rawX, margin + half), Math.max(margin + half, viewport.width - margin - half));
+    return { left: left, bottom: viewport.height - barRect.top + gap, tailOffset: rawX - left };
+}
+
+// Nearest chapter marker to a pointer x, within a pixel tolerance.
+function chapterAtX(x, barRect, duration, chapters, tolPx) {
+    tolPx = tolPx == null ? 7 : tolPx;
+    if (!barRect || !duration || !chapters || !chapters.length) return null;
+    let best = null;
+    let bestD = Infinity;
+    for (let i = 0; i < chapters.length; i++) {
+        const cx = barRect.left + (chapters[i].t / duration) * barRect.width;
+        const d = Math.abs(x - cx);
+        if (d <= tolPx && d < bestD) { bestD = d; best = chapters[i]; }
+    }
+    return best;
+}
+
+// The element that survives fullscreen — body is not painted once fullscreen starts.
+function overlayHost() {
+    return document.fullscreenElement ||
+        document.querySelector('.html5-video-player') ||
+        document.body;
+}
+
+function momentsChapters() {
+    const out = [];
+    for (let i = 0; i < timestamps.length; i++) {
+        out.push({ t: timestamps[i], title: titles[i] || 'Chapter' });
+    }
+    return out;
+}
+
+function progressBarEl() {
+    return document.querySelector('.ytp-progress-list') || document.querySelector('.ytp-progress-bar');
+}
+
+function ensureChapterCard() {
+    if (chapterCardEl && chapterCardEl.isConnected) return chapterCardEl;
+    const el = document.createElement('div');
+    el.className = 'yt-chapter-card';
+    el.setAttribute('aria-live', 'polite');
+
+    const kick = document.createElement('div');
+    kick.className = 'yt-chapter-card__kick';
+    kick.appendChild(document.createElement('i'));
+    const kickText = document.createElement('span');
+    kickText.textContent = 'Chapter';
+    kick.appendChild(kickText);
+
+    const title = document.createElement('div');
+    title.className = 'yt-chapter-card__title';
+
+    const line = document.createElement('div');
+    line.className = 'yt-chapter-card__line';
+    line.appendChild(document.createElement('span'));
+
+    const tail = document.createElement('div');
+    tail.className = 'yt-chapter-card__tail';
+
+    el.appendChild(kick);
+    el.appendChild(title);
+    el.appendChild(line);
+    el.appendChild(tail);
+    chapterCardEl = el;
+    return el;
+}
+
+function ensureChapterTip() {
+    if (chapterTipEl && chapterTipEl.isConnected) return chapterTipEl;
+    const el = document.createElement('div');
+    el.className = 'yt-chapter-tip';
+    chapterTipEl = el;
+    return el;
+}
+
+function hideChapterCard() {
+    clearTimeout(chapterCardTimer);
+    if (chapterCardEl) chapterCardEl.classList.remove('on');
+}
+
+function showChapterCard(ch) {
+    if (!chapterCardEnabled || !ch) return;
+    const bar = progressBarEl();
+    const video = momentsVideo || document.querySelector('video');
+    if (!bar || !video || !video.duration) return;
+
+    const el = ensureChapterCard();
+    const host = overlayHost();
+    if (el.parentElement !== host) host.appendChild(el);
+
+    el.querySelector('.yt-chapter-card__title').textContent = ch.title;
+    el.classList.remove('on');
+
+    const hostRect = host.getBoundingClientRect();
+    const viewport = host === document.body
+        ? { width: window.innerWidth, height: window.innerHeight }
+        : { width: hostRect.width, height: hostRect.height };
+
+    const a = anchorFor(ch.t, video.duration, bar.getBoundingClientRect(), el.offsetWidth, viewport, 40, 12);
+    el.style.left = a.left + 'px';
+    el.style.bottom = a.bottom + 'px';
+    const tail = el.querySelector('.yt-chapter-card__tail');
+    if (tail) tail.style.left = 'calc(50% + ' + a.tailOffset + 'px)';
+
+    const line = el.querySelector('.yt-chapter-card__line span');
+    if (line) {
+        line.style.transition = 'none';
+        line.style.transform = 'scaleX(1)';
+        void line.offsetWidth;
+        line.style.transition = 'transform ' + CARD_DWELL + 'ms linear';
+        line.style.transform = 'scaleX(0)';
+    }
+
+    momentLastShown = ch;
+    requestAnimationFrame(() => el.classList.add('on'));
+    clearTimeout(chapterCardTimer);
+    chapterCardTimer = setTimeout(hideChapterCard, CARD_DWELL);
+}
+
+function onMomentTick() {
+    const v = momentsVideo;
+    if (!v || !v.duration) return;
+    const now = v.currentTime;
+    if (momentLast === null) { momentLast = now; return; }
+    const prev = momentLast;
+    momentLast = now;
+    if (Date.now() < momentMuteUntil) return;
+    const ch = findCrossing(prev, now, momentsChapters());
+    if (ch) showChapterCard(ch);
+}
+
+function initMarkerProbe() {
+    const bar = progressBarEl();
+    if (!bar || bar.dataset.ytMomentsProbe === '1') return;
+    bar.dataset.ytMomentsProbe = '1';
+
+    const tip = ensureChapterTip();
+
+    bar.addEventListener('mousemove', (e) => {
+        const v = momentsVideo || document.querySelector('video');
+        if (!v || !v.duration) return;
+        const rect = bar.getBoundingClientRect();
+        const hit = chapterAtX(e.clientX, rect, v.duration, momentsChapters(), 7);
+        if (!hit) { tip.classList.remove('on'); return; }
+
+        const host = overlayHost();
+        if (tip.parentElement !== host) host.appendChild(tip);
+        tip.textContent = hit.title;
+
+        const hostRect = host.getBoundingClientRect();
+        const viewport = host === document.body
+            ? { width: window.innerWidth, height: window.innerHeight }
+            : { width: hostRect.width, height: hostRect.height };
+        const a = anchorFor(hit.t, v.duration, rect, tip.offsetWidth, viewport, 22, 8);
+        tip.style.left = a.left + 'px';
+        tip.style.bottom = a.bottom + 'px';
+        tip.classList.add('on');
+    });
+
+    bar.addEventListener('mouseleave', () => tip.classList.remove('on'));
+}
+
+function initChapterMoments() {
+    const v = document.querySelector('video');
+    if (v && v !== momentsVideo) {
+        momentsVideo = v;
+        momentLast = null;
+        v.addEventListener('timeupdate', onMomentTick);
+        v.addEventListener('seeking', () => {
+            momentMuteUntil = Date.now() + CARD_SEEK_MUTE;
+            hideChapterCard();
+        });
+        v.addEventListener('seeked', () => { momentLast = v.currentTime; });
+        v.addEventListener('play', () => { momentLast = v.currentTime; });
+        v.addEventListener('pause', () => { momentLast = null; });
+        v.addEventListener('ended', hideChapterCard);
+    }
+
+    initMarkerProbe();
+
+    if (!momentsFsBound) {
+        momentsFsBound = true;
+        document.addEventListener('fullscreenchange', () => {
+            if (chapterTipEl) chapterTipEl.classList.remove('on');
+            if (chapterCardEl && chapterCardEl.classList.contains('on') && momentLastShown) {
+                showChapterCard(momentLastShown);
+            }
+        });
+    }
+
+    try {
+        chrome.storage.local.get(['showChapterCard'], (res) => {
+            if (res && res.showChapterCard === false) chapterCardEnabled = false;
+        });
+    } catch (e) { /* storage unavailable */ }
+}
+
 function resetVideoState() {
     timestamps = [];
     titles = [];
@@ -3470,6 +3730,7 @@ async function onVideoPageLoaded() {
     if (!currentVid) return;
 
     maybeAutoCopyTranscript();
+    initChapterMoments();
 
     const foundInDB = await loadFromDBOrDefault();
     if (!isExtValid()) return;
