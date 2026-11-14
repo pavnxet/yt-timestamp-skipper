@@ -5,9 +5,6 @@ on:
       - '.github/workflows/adopt-agent-template.yml'
 permissions:
   contents: write
-  # Adding .github/workflows/secret-scan.yml needs this; contents:write alone
-  # makes the push fail with "refusing to allow a GitHub App to create ... workflow".
-  workflows: write
 jobs:
   adopt:
     runs-on: ubuntu-latest
@@ -28,7 +25,6 @@ jobs:
           touch learning/archive/.gitkeep learning/topics/.gitkeep
           cp /tmp/tpl/scripts/scan_sensitive.py /tmp/tpl/scripts/setup.sh /tmp/tpl/scripts/setup.ps1 scripts/
           cp /tmp/tpl/.githooks/* .githooks/
-          cp /tmp/tpl/.github/workflows/secret-scan.yml .github/workflows/
           chmod +x .githooks/* scripts/setup.sh scripts/scan_sensitive.py
 
       - name: Apply the project tailoring
@@ -44,7 +40,7 @@ jobs:
           set -e
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add AGENTS.md learning scripts .githooks .github/workflows/secret-scan.yml .env.example .gitignore
+          git add AGENTS.md learning scripts .githooks .env.example .gitignore
           git rm -q .github/workflows/adopt-agent-template.yml .github/a1.b64 .github/a2.b64 .github/a3.b64
           git commit -m "chore: adopt the learnings-for-agents memory + safety template"
           git push
