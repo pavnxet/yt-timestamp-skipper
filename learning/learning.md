@@ -1,4 +1,4 @@
-<!-- verified-at: 8dc1daf · 2026-11-14 -->
+<!-- verified-at: 96246b1 · 2026-11-18 -->
 # Persistent Learnings & Domain Knowledge
 
 ## [area: parsing]
@@ -14,14 +14,25 @@
 - [PITFALL] `initMarkerProbe` bound once at boot; when `.ytp-progress-bar` had not rendered yet the listener never attached and hover was dead. Re-attempt the bind on each `timeupdate`. (v:2026-11-14 · high · S-20261114-0000)
 - [CONVENTION] Chapter crossings are detected by comparing two samples (`last`, `now`). A jump larger than 1.5 s is a seek and must not raise a card. (v:2026-11-14 · high · S-20261114-0000)
 
+## [area: storage]
+- [PITFALL] `shortcuts` is a single stored object. `shortcuts = res.shortcuts` replaces it wholesale, so any key added by a later version is `undefined` for existing users and the new shortcut silently never fires. Always `{ ...DEFAULT_SHORTCUTS, ...res.shortcuts }`. (v:2026-11-18 · high · S-20261118-0000)
+- [CONVENTION] Treat `chrome.storage.local` key names as public API — renaming one silently drops user data. (v:2026-11-18 · medium · S-20261118-0000)
+
+## [area: shortcuts]
+- [PITFALL] The recorder adds a `window` keydown listener while the global handler listens on `document`. Both fire on the same press, so rebinding a key also triggers its current action (rebinding to `Alt+M` toggled the panel mid-record). Guard with a `recordingShortcut` flag checked first in the global handler. (v:2026-11-18 · high · S-20261118-0000)
+- [PITFALL] `Alt+S` (sponsor marker) is hardcoded as `e.altKey && e.code === 'KeyS'`, and `recordShortcut` has no branch for `yt-sk-sc-sb`. Its Settings box looks editable but does nothing. Still open. (v:2026-11-18 · high · S-20261118-0000)
+- [CONVENTION] Prefer `Alt+<letter>` for new bindings. YouTube claims most bare letters (`k`, `m`, `f`, `t`, `c`, `i`, `j`, `l`, digits), so a bare letter fights the player. (v:2026-11-18 · high · S-20261118-0000)
+- [CONVENTION] Handle the panel toggle before the `<video>` guard so it still works when the player node is momentarily absent. (v:2026-11-18 · medium · S-20261118-0000)
+
 ## [area: build]
 - [PITFALL] The `yt-allinone` skill text contains 41 backticks. Embed it with a JSON-escaped string; a template literal would terminate at the first backtick and break the whole file. (v:2026-11-14 · high · S-20261114-0000)
 - [PITFALL] The Actions token cannot create files under `.github/workflows/` — `workflows` is not a valid `permissions:` key, so the workflow fails to parse. Workflow files must be pushed via the GitHub App/connector, not from inside a workflow. (v:2026-11-14 · high · S-20261114-0000)
+- [PITFALL] A commit pushed by `github-actions[bot]` does not trigger other workflows (recursion guard). Trigger a follow-up run with a normal commit if CI must see the new tree. (v:2026-11-14 · medium · S-20261118-0000)
 
 ## [area: release]
 - [PITFALL] Never regenerate `CRX_PRIVATE_KEY`. The extension ID (`idcdhbjfemmhadnlijcohccpedihldhp`) is derived from it; a new key means every existing install stops updating. (v:2026-11-14 · high · S-20261114-0000)
 - [CONVENTION] `manifest.version` must strictly increase — Chrome compares it as 1–4 dotted integers. (v:2026-11-14 · high · S-20261114-0000)
 
 ## [area: security]
-- [PITFALL] `background.js` defines `DEFAULT_TRANSCRIPT_API_KEY` with a live key in plain text, and it ships in public releases. Rotate it and load it at runtime. (v:2026-11-14 · high · S-20261114-0000)
+- [CONVENTION] No shared credentials ship in the extension. `DEFAULT_TRANSCRIPT_API_KEY` was removed in 3.9.0 and now defaults to `""`; users supply their own key, and the code throws an actionable error before the network call. See ADR-003. (v:2026-11-18 · high · S-20261118-0000)
 - [CONVENTION] The scanner's `sk-` token rule is tuned with `(?<![A-Za-z0-9-])` so the project's own `yt-sk-` CSS prefix is not a false positive. Do not rename classes to dodge a scanner hit. (v:2026-11-14 · medium · S-20261114-0000)
