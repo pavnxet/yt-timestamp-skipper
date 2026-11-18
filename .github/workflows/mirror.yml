@@ -1,9 +1,15 @@
 name: Mirror to Codeberg
 
+# Automatic mirroring is OFF.
+# Codeberg's registrar put codeberg.org on clientHold on 18 Nov 2026, so the
+# domain stopped resolving and every push turned this job red with
+# "Could not resolve hostname codeberg.org".
+# Run it by hand from the Actions tab once Codeberg is reachable again, then
+# restore the push trigger below.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
+  # push:
+  #   branches: [main]
 
 # Two mirror runs at once race on the target's refs and one fails with
 # "incorrect old value provided". Serialise them; never cancel a running mirror.
