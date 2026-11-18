@@ -1,31 +1,23 @@
 # Keyboard shortcuts
 
-| Key | Action | Rebindable |
-| :--- | :--- | :--- |
-| `]` | Next chapter | Yes |
-| `[` | Previous chapter | Yes |
-| `Alt + X` | Add the current time as a note marker | Yes |
-| `Alt + S` | Start / end a sponsor segment | No |
-| `Esc` | Close the dashboard | No |
+Every shortcut below is editable. Open the panel, go to **⚙️ Settings → ⌨️ Keyboard shortcuts**, click a box, then press the key you want. The new key saves immediately and applies on every video.
 
-"Next" and "previous" follow the **section filter** — with only **Answers** selected, `]` lands on the next correct-option reveal.
+## The list
 
-## Rebinding
+| Action | Default | Notes |
+| --- | --- | --- |
+| Open / close the panel | `Alt+M` | Works anywhere on a video page, including fullscreen. |
+| Next chapter | `]` | Jumps to the next chapter timestamp. |
+| Previous chapter | `[` | Jumps to the previous chapter timestamp. |
+| Add a timestamp | `Alt+X` | Drops a marker at the current playback position. |
+| Mark sponsor (start/end) | `Alt+S` | Fixed key — press once to set the segment start, again to set the end. |
 
-**Step 1:** Open **Settings → Shortcuts**.
+## Why Alt+M is the default for the panel
 
-**Step 2:** Click the field for next, previous or add-note.
+YouTube already claims most bare letters — `k` play/pause, `f` fullscreen, `m` mute, `t` theatre, `c` captions, `i` miniplayer, `j`/`l` seek, and the digits for percentage jumps. A bare `m` would fight YouTube's mute, so the panel toggle ships as `Alt+M`, which YouTube leaves alone.
 
-**Step 3:** Press the key you want. `Alt` is captured along with it for the note key.
+## Notes
 
-**Step 4:** Save. Bindings persist in `chrome.storage.local` under `shortcuts` as `{ next, prev, add, addAlt }`, using `KeyboardEvent.code` values (`BracketRight`, `KeyJ`, …).
-
-## Conflicts
-
-| Conflict | Result | Fix |
-| :--- | :--- | :--- |
-| YouTube's own shortcuts (`k`, `j`, `l`, `f`) | Both fire | Pick a key with a modifier |
-| The key also types into a field | Ignored while an input is focused | Click outside the panel first |
-| Browser shortcut (e.g. `Ctrl+T`) | Browser wins | Choose an unmodified letter or `Alt` combo |
-
-Bindings use `KeyboardEvent.code`, so they follow physical key position, not the character produced by your layout. `]` on a US layout is `BracketRight`; on another layout, rebind by pressing the key once.
+- Shortcuts are ignored while you are typing in a text field, so the Editor never swallows your typing.
+- While a shortcut is being recorded, the key you press is captured and does not also fire its action.
+- Bindings are stored in `chrome.storage.local` under `shortcuts`. New shortcuts added by an update keep working for existing installs, because stored values are merged over the defaults.

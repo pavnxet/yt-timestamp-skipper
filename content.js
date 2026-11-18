@@ -1,5 +1,5 @@
 /**
- * YT Smart Chapters Pro v3.8.1
+ * YT Smart Chapters Pro v3.9.1
  * made with 💖 by pavnxet
  * GitHub: https://github.com/pavnxet/yt-timestamp-skipper
  */
@@ -45,7 +45,14 @@ let renderSponsorBlockCards = () => {};
 let uploadSponsorBlockSegments = () => {};
 let addManualSponsorBlockSegment = () => false;
 let pendingSbStart = null;
-let shortcuts = { next: 'BracketRight', prev: 'BracketLeft', add: 'KeyX', addAlt: true };
+const DEFAULT_SHORTCUTS = {
+    next: 'BracketRight',
+    prev: 'BracketLeft',
+    add: 'KeyX', addAlt: true,
+    toggle: 'KeyM', toggleAlt: true   // Alt+M — maximise/minimise the panel
+};
+let shortcuts = { ...DEFAULT_SHORTCUTS };
+let recordingShortcut = false;
 
 // --- Mini Widget UI ---
 let miniWidget = null;
@@ -412,6 +419,10 @@ function createDashboard() {
                         <label>Mark sponsor (start/end)</label>
                         <div id="yt-sk-sc-sb" class="yt-sk-shortcut-input" title="Press once for Start, again for End">Alt+S</div>
                     </div>
+                    <div class="yt-sk-shortcut-item">
+                        <label>Open / close the panel</label>
+                        <div id="yt-sk-sc-toggle" class="yt-sk-shortcut-input" title="Works anywhere on a video page, including fullscreen">Alt+M</div>
+                    </div>
                 </div>
             </div>
 
@@ -643,6 +654,7 @@ function createDashboard() {
     const scNext = document.getElementById('yt-sk-sc-next');
     const scPrev = document.getElementById('yt-sk-sc-prev');
     const scAdd = document.getElementById('yt-sk-sc-add');
+    const scToggle = document.getElementById('yt-sk-sc-toggle');
 
     const aiProviderSelect = document.getElementById('yt-sk-ai-provider');
     const panelAikit = document.getElementById('yt-sk-panel-aikit');
@@ -1228,7 +1240,7 @@ function createDashboard() {
         }
 
         if (res.shortcuts) {
-            shortcuts = res.shortcuts;
+            shortcuts = { ...DEFAULT_SHORTCUTS, ...res.shortcuts };
             updateShortcutUI();
         }
     });
@@ -1237,22 +1249,28 @@ function createDashboard() {
         scNext.textContent = shortcuts.next.replace('BracketRight', ']').replace('Key', '');
         scPrev.textContent = shortcuts.prev.replace('BracketLeft', '[').replace('Key', '');
         scAdd.textContent = (shortcuts.addAlt ? 'Alt+' : '') + shortcuts.add.replace('Key', '');
+        if (scToggle) scToggle.textContent = (shortcuts.toggleAlt ? 'Alt+' : '') + (shortcuts.toggle || '').replace('Key', '');
     }
 
     function recordShortcut(target) {
         target.textContent = '...';
+        // Swallow the key while capturing, so the global handler does not also act on it.
+        recordingShortcut = true;
         const handler = (e) => {
             e.preventDefault();
             const key = e.code;
             if (target.id === 'yt-sk-sc-next') shortcuts.next = key;
             if (target.id === 'yt-sk-sc-prev') shortcuts.prev = key;
             if (target.id === 'yt-sk-sc-add') { shortcuts.add = key; shortcuts.addAlt = e.altKey; }
+            if (target.id === 'yt-sk-sc-toggle') { shortcuts.toggle = key; shortcuts.toggleAlt = e.altKey; }
             chrome.storage.local.set({ shortcuts });
             updateShortcutUI();
+            recordingShortcut = false;
             window.removeEventListener('keydown', handler);
         };
         window.addEventListener('keydown', handler);
     }
+    if (scToggle) scToggle.onclick = () => recordShortcut(scToggle);
     scNext.onclick = () => recordShortcut(scNext);
     scPrev.onclick = () => recordShortcut(scPrev);
     scAdd.onclick = () => recordShortcut(scAdd);
@@ -2587,7 +2605,7 @@ function createDashboard() {
 
 // --- Sync & Storage ---
 chrome.storage.local.get(['shortcuts'], (res) => {
-    if (res.shortcuts) shortcuts = res.shortcuts;
+    if (res.shortcuts) shortcuts = { ...DEFAULT_SHORTCUTS, ...res.shortcuts };
 });
 
 // --- Core Logic ---
@@ -3206,7 +3224,16 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 });
 
 document.addEventListener('keydown', e => {
+    if (recordingShortcut) return;
     if (['INPUT','TEXTAREA'].includes(document.activeElement?.tagName)) return;
+
+    // Panel toggle first: it must work even if the <video> node is momentarily absent.
+    if (shortcuts.toggle && e.code === shortcuts.toggle && (!shortcuts.toggleAlt || e.altKey)) {
+        e.preventDefault();
+        toggleDashboard();
+        return;
+    }
+
     const video = document.querySelector('video');
     if (!video) return;
 

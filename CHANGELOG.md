@@ -15,6 +15,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 - README rewritten for discoverability: keyword-led title and summary, badges, table of contents, feature index, configuration and shortcut tables, FAQ, browser support matrix.
 - Landing page metadata: canonical URL, Open Graph and Twitter cards, JSON-LD `SoftwareApplication`, `robots.txt` and `sitemap.xml`.
 
+## [3.9.1]
+
+### Added
+- **Panel shortcut.** `Alt+M` opens and closes the extension panel from anywhere on a video page, including fullscreen. It is editable like the other shortcuts: **Settings → Keyboard shortcuts → Open / close the panel**.
+
+### Fixed
+- Newly added shortcuts now reach existing installs. Stored shortcut settings are merged over the defaults instead of replacing them, so a missing key no longer leaves the shortcut dead.
+- The global key handler ignores keys while a shortcut is being recorded, so pressing a new binding no longer also triggers its old action.
+
 ## [3.9.0]
 
 ### Changed
