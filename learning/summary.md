@@ -28,3 +28,13 @@
 - **Verified**: `node --check content.js` clean; scanner clean; 24 shortcut assertions pass (defaults, merge, predicate, recorder, handler order); both releases published and `updates.xml` advertises 3.9.1
 - **Refs**: ADR-002, ADR-003, learning.md [area: storage], [area: shortcuts]
 - **Open / Next**: `Alt+S` is still hardcoded and its settings box does nothing — make it rebindable
+
+## S-20261118-0001 · Codeberg mirror switched to dispatch-only
+- **Agent**: Sarvam General Assistant · **Tier**: T1 · **Status**: DONE
+- **Repo**: branch `main` · base `ab8989e` · tree clean
+- **Request**: CI was red; stop the automatic "Mirror to Codeberg" runs
+- **Diagnosis**: Not the secret scan — that passed. The failing job was `Mirror to Codeberg`, error `ssh: Could not resolve hostname codeberg.org: Name does not resolve`. Codeberg's registrar placed the domain on `clientHold` at ~06:30 UTC on 18 Nov 2026, removing it from the `.org` zone. The mirror last passed on 14 Nov (run #104); the first red run (09:02 UTC) carried a commit of mine, but the cause predates it. A re-run (attempt 2) failed identically in 20 s, ruling out a blip.
+- **Did**: Removed the `push` trigger from `.github/workflows/mirror.yml`, leaving `workflow_dispatch` only, with a comment recording why and how to restore it
+- **Verified**: YAML parses with `workflow_dispatch` as the sole trigger; blob `316bcef4`; no new mirror run triggered by the change itself
+- **Refs**: learning.md [area: build]
+- **Open / Next**: Re-enable the push trigger once codeberg.org resolves again. Do **not** hardcode the IP in `/etc/hosts` — a `clientHold` domain is not renewing its certificate, so TLS will fail next.
