@@ -64,3 +64,18 @@
   - `python scripts/scan_sensitive.py --all` clean.
 - **Refs**: learning.md [area: sponsorblock]
 - **Open / Next**: none
+
+## S-20261121-0002 · Switch userAgent to sponsorblock/5.10.4 & migrate category mode (v3.9.4)
+- **Agent**: Antigravity · **Tier**: T1 · **Status**: DONE
+- **Repo**: branch `main` · tree clean
+- **Request**: User hit "SponsorBlock server dropped the submission (returned text: 'OK')" alert on `0wsRIO0CCxE`
+- **Diagnosis**: The server's `requestValidator.ts` rule strictly requires the client `userAgent` payload to begin with `sponsorblock/` (e.g. `sponsorblock/5.10.4`). When tested against the server, `sponsorblock/5.10.4` succeeded immediately (`status: 200, JSON: True` with UUIDs), whereas other variants triggered `action: "drop"`. Also, existing user installations had `sbCategoryMode: 'sponsor_only'` stored from older versions, converting all `FILLER` and `INTRO` tags to `sponsor`.
+- **Did**:
+  - `background.js`: updated `userAgent` to `"sponsorblock/5.10.4"`.
+  - `content.js`: auto-migrated stored categoryMode to `'mapped'` unless user explicitly set it, preserving `FILLER` and `INTRO` categories.
+  - `manifest.json` & `CHANGELOG.md`: bumped to v3.9.4.
+- **Verified**:
+  - Submitted all segments for `0wsRIO0CCxE` to live API: returned `SUCCESS! Count: 7` with real assigned UUIDs; all active in database.
+  - `node --check` syntax clean on both scripts; scanner clean.
+- **Refs**: learning.md [area: sponsorblock]
+- **Open / Next**: none

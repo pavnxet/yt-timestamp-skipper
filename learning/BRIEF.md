@@ -2,13 +2,13 @@
 # BRIEF: cold-start summary
 
 ## State (≤ 5 lines)
-Chrome MV3 extension, v3.9.3, live and self-updating. One content script (`content.js`, ~230 KB) holds all UI and logic; no bundler, no framework, no committed test runner. Releases are self-hosted: pushing a `v*` tag signs a CRX3 and publishes `updates.xml` to the GitHub release, and installed copies update from there. Manual (skill-copy) generation is the default; API mode is opt-in. There is no shared credential of any kind — users supply their own AI and transcript keys.
+Chrome MV3 extension, v3.9.4, live and self-updating. One content script (`content.js`, ~230 KB) holds all UI and logic; no bundler, no framework, no committed test runner. Releases are self-hosted: pushing a `v*` tag signs a CRX3 and publishes `updates.xml` to the GitHub release, and installed copies update from there. Manual (skill-copy) generation is the default; API mode is opt-in. There is no shared credential of any kind — users supply their own AI and transcript keys.
 
 ## Active work / handoff
-- S-20261121-0001 · DONE · SponsorBlock upload silent drops fixed in v3.9.3 (standard client userAgent, drop detection, live duration guard, Hindi skill heading support) · next: tag v3.9.3 release if user requests · blocked on: none
+- S-20261121-0002 · DONE · userAgent updated to sponsorblock/5.10.4 and category migration shipped as v3.9.4 · next: none · blocked on: none
 
 ## Top pitfalls (≤ 10, most expensive to rediscover first)
-- sponsorblock: `userAgent` must match an approved client signature (e.g. `mnjggcdmjocbbbhaepdhchncahnbgone/v5.10.4`). Custom names trigger silent drops (`action: "drop"`) returning HTTP 200 `"OK"` with 0 DB writes -> learning.md [area: sponsorblock]
+- sponsorblock: `userAgent` must be `sponsorblock/<semver>` (e.g. `sponsorblock/5.10.4`). The server validator requires `sponsorblock/` prefix; other formats trigger silent drops (`action: "drop"`) returning HTTP 200 `"OK"` with 0 DB writes -> learning.md [area: sponsorblock]
 - sponsorblock: official client has `filler` and `selfpromo` disabled by default in extension settings; they won't render on the seekbar until enabled -> learning.md [area: sponsorblock]
 - sponsorblock: `highlight` is not a category; it is `poi_highlight`. One bad category 400s the whole batch -> learning.md [area: sponsorblock]
 - parsing: a chapter title may contain `|`. Table sniffing must require a **leading** `|`; `line.includes('|')` silently dropped every chapter -> learning.md [area: parsing]

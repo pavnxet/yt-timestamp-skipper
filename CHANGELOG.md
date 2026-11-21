@@ -5,6 +5,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 
 ## [Unreleased]
 
+## [3.9.4] - 2026-11-21
+
+### Fixed
+- **SponsorBlock client userAgent.** Switched `userAgent` from Chrome-ID-based string to standard accepted client format `sponsorblock/5.10.4`. SponsorBlock's validator strictly requires `sponsorblock/` prefix format to avoid dropping submissions.
+- **Category mode migration.** Auto-migrated stored `sbCategoryMode` so existing installs aren't locked into `sponsor_only`, properly retaining `INTRO`, `FILLER`, and `SELFPROMO` tags.
+
 ## [3.9.3] - 2026-11-21
 
 ### Fixed

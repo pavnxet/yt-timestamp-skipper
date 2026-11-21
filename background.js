@@ -1310,7 +1310,7 @@ async function submitSponsorBlock({ videoId, userId, segments, videoDuration }) 
         videoID: videoId,
         userID: cleanUserId,
         service: "YouTube",
-        userAgent: "mnjggcdmjocbbbhaepdhchncahnbgone/v5.10.4",
+        userAgent: "sponsorblock/5.10.4",
         segments: segments
     };
 

@@ -1230,7 +1230,9 @@ function createDashboard() {
 
         // SponsorBlock credentials
         if (res.sbUserId && sbUserIdInput) sbUserIdInput.value = res.sbUserId;
-        if (res.sbCategoryMode && sbCategoryModeSelect) sbCategoryModeSelect.value = res.sbCategoryMode;
+        if (sbCategoryModeSelect) {
+            sbCategoryModeSelect.value = (res.sbCategoryModeExplicit ? res.sbCategoryMode : null) || 'mapped';
+        }
 
         // TranscriptAPI fallback key
         if (transcriptApiKeyInput) {
@@ -1450,6 +1452,7 @@ function createDashboard() {
             soundVolume: soundVolume,
             sbUserId: sbUserIdInput ? sbUserIdInput.value.trim() : '',
             sbCategoryMode: sbCategoryModeSelect ? sbCategoryModeSelect.value : 'mapped',
+            sbCategoryModeExplicit: true,
             transcriptApiKey: transcriptApiKeyInput ? transcriptApiKeyInput.value.trim() : ''
         };
         showMiniWidget = miniChecked;
@@ -2444,7 +2447,7 @@ function createDashboard() {
 
             const videoEl = document.querySelector('video');
             const videoDuration = (videoEl?.duration && isFinite(videoEl.duration)) ? Math.round(videoEl.duration) : undefined;
-            const categoryMode = res.sbCategoryMode || 'mapped';
+            const categoryMode = (res.sbCategoryModeExplicit ? res.sbCategoryMode : null) || 'mapped';
 
             const parsed = parseSponsorSegmentsFromText(rawText);
             const segmentsArray = parsed.map(item => {
