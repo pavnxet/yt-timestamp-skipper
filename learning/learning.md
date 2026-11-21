@@ -1,4 +1,4 @@
-<!-- verified-at: 96246b1 · 2026-11-18 -->
+<!-- verified-at: 9433d08 · 2026-11-21 -->
 # Persistent Learnings & Domain Knowledge
 
 ## [area: parsing]
@@ -36,3 +36,11 @@
 ## [area: security]
 - [CONVENTION] No shared credentials ship in the extension. `DEFAULT_TRANSCRIPT_API_KEY` was removed in 3.9.0 and now defaults to `""`; users supply their own key, and the code throws an actionable error before the network call. See ADR-003. (v:2026-11-18 · high · S-20261118-0000)
 - [CONVENTION] The scanner's `sk-` token rule is tuned with `(?<![A-Za-z0-9-])` so the project's own `yt-sk-` CSS prefix is not a false positive. Do not rename classes to dodge a scanner hit. (v:2026-11-14 · medium · S-20261114-0000)
+
+## [area: sponsorblock]
+- [PITFALL] `highlight` is **not** a SponsorBlock category — the valid one is `poi_highlight`. `resolveSponsorCategory` returned `highlight`, and a single invalid category makes the server reject the **entire batch** with a 400, so one stray word in one segment's reason killed all 18. Fixed in 3.9.2. (v:2026-11-21 · high · S-20261121-0000)
+- [CONVENTION] `userID` in `POST /api/skipSegments` is the **raw private ID** (30+ chars), not a hash. The *public* ID is that string hashed with SHA-256 5000 times (64 hex chars). Pasting the public ID passes a `length >= 32` check and files segments under a phantom identity where nobody — including the submitter — can see them. (v:2026-11-21 · high · S-20261121-0000)
+- [CONVENTION] SponsorBlock forbids automated submission: timings from automated tools are allowed, but a human must review before upload. Auto-uploading an AI-detected batch is what the auto-moderator targets — expect 403, or silent shadow-hiding. (v:2026-11-21 · high · S-20261121-0000)
+- [PITFALL] A shadow-hidden segment returns 404 from the public `GET /api/skipSegments`, so "the video has no segments" does **not** prove the upload never reached the server. Distinguish accepted-but-hidden from rejected before changing code. (v:2026-11-21 · high · S-20261121-0000)
+- [CONVENTION] The POST response is an array of only the segments the server accepted. Report *that* length, not the number sent, or partial rejections look like success. (v:2026-11-21 · medium · S-20261121-0000)
+- [CONVENTION] A service worker `fetch` to a new host needs that host in `host_permissions`; `sponsor.ajay.app` is already listed. (v:2026-11-21 · medium · S-20261121-0000)

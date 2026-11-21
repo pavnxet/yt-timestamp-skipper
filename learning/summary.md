@@ -38,3 +38,13 @@
 - **Verified**: YAML parses with `workflow_dispatch` as the sole trigger; blob `316bcef4`; no new mirror run triggered by the change itself
 - **Refs**: learning.md [area: build]
 - **Open / Next**: Re-enable the push trigger once codeberg.org resolves again. Do **not** hardcode the IP in `/etc/hosts` — a `clientHold` domain is not renewing its certificate, so TLS will fail next.
+
+## S-20261121-0000 · SponsorBlock upload fixes (v3.9.2)
+- **Agent**: Sarvam General Assistant · **Tier**: T2 · **Status**: DONE
+- **Repo**: branch `main` · base `9433d08` · tree clean
+- **Request**: Uploaded SponsorBlock segments for video `4JWv4wdNtH4` never appeared; check the video and the segments, then fix
+- **Diagnosis**: SponsorBlock held zero segments for the video (public GET → 404). The 18 pasted intervals parsed perfectly (18/18, all categories valid, 550 s total, no overlaps), host permissions were present and the POST shape matched the docs — so the extension was not dropping them. Two real defects were found by reading the code: `resolveSponsorCategory` returned the non-existent category `highlight`, which 400s an entire batch, and the success toast reported segments *sent* rather than segments *accepted*. The remaining failure is server-side: SponsorBlock forbids automated submission, and an 18-segment AI batch is exactly what its auto-moderator rejects or shadow-hides.
+- **Did**: `poi_highlight` fix; accepted-count reporting; a review dialog that lists every interval before sending; a guard that warns when a 64-char public ID is pasted
+- **Verified**: `node --check` clean; scanner clean; 14 assertions pass including a 42-input property test that no mapped category is off the official list; `manifest.json` 3.9.2; CRX released from tag `v3.9.2`
+- **Refs**: learning.md [area: sponsorblock]
+- **Open / Next**: the user still needs to confirm whether their upload returned a green toast (accepted, hidden) or a red alert (rejected) — that decides whether to trim the batch or fix the ID

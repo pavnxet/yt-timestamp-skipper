@@ -1,11 +1,11 @@
-<!-- verified-at: ab8989e · 2026-11-18 · rewritten whole, not appended -->
+<!-- verified-at: 9433d08 · 2026-11-21 · rewritten whole, not appended -->
 # BRIEF: cold-start summary
 
 ## State (≤ 5 lines)
 Chrome MV3 extension, v3.9.1, live and self-updating. One content script (`content.js`, ~224 KB) holds all UI and logic; no bundler, no framework, no committed test runner. Releases are self-hosted: pushing a `v*` tag signs a CRX3 and publishes `updates.xml` to the GitHub release, and installed copies update from there. Manual (skill-copy) generation is the default; API mode is opt-in. There is no shared credential of any kind — users supply their own AI and transcript keys.
 
 ## Active work / handoff
-- S-20261118-0001 · DONE · Codeberg mirror set to dispatch-only (codeberg.org is on registrar `clientHold` since 18 Nov, so push-triggered runs fail on DNS) · next: make `Alt+S` (sponsor marker) rebindable — it is still hardcoded · blocked on: Codeberg restoring DNS before the mirror can run again
+- S-20261121-0000 · DONE · SponsorBlock upload fixes shipped as v3.9.2 (invalid `highlight` category, honest accepted-count, review dialog, public-ID guard) · next: confirm whether the user's failed upload returned a toast (hidden) or an alert (rejected) · blocked on: none
 
 ## Top pitfalls (≤ 10, most expensive to rediscover first)
 - parsing: a chapter title may contain `|`. Table sniffing must require a **leading** `|`; `line.includes('|')` silently dropped every chapter -> learning.md [area: parsing]
@@ -16,6 +16,8 @@ Chrome MV3 extension, v3.9.1, live and self-updating. One content script (`conte
 - build: the skill text has 41 backticks; embed it JSON-escaped, never in a template literal -> learning.md [area: build]
 - release: never regenerate `CRX_PRIVATE_KEY` — the extension ID derives from it -> learning.md [area: release]
 - workflow: the Actions token cannot create files under `.github/workflows/`; `workflows` is not a valid `permissions:` key -> learning.md [area: build]
+- sponsorblock: `highlight` is not a category; it is `poi_highlight`. One bad category 400s the whole batch -> learning.md [area: sponsorblock]
+- sponsorblock: a 404 from the public API does not prove the upload failed — shadow-hidden segments are invisible too -> learning.md [area: sponsorblock]
 - external: a red run is not automatically a repo fault. Read the failing step before assuming a regression — the Codeberg mirror failed on DNS, not on code -> learning.md [area: build]
 
 ## Verified commands
