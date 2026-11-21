@@ -79,3 +79,16 @@
   - `node --check` syntax clean on both scripts; scanner clean.
 - **Refs**: learning.md [area: sponsorblock]
 - **Open / Next**: none
+
+## S-20261121-0003 · Restore Sponsor-only category mode & add quick dropdown (v3.9.5)
+- **Agent**: Antigravity · **Tier**: T1 · **Status**: DONE
+- **Repo**: branch `main` · tree clean
+- **Request**: Restore the "Upload everything as Sponsor" functionality and make it easy to toggle
+- **Diagnosis**: The temporary `sbCategoryModeExplicit` guard in v3.9.4 blocked `sponsor_only` from taking effect. Also, `sbCategoryModeSelect` had no `onchange` event listener, requiring users to open Settings and manually hit Save Settings.
+- **Did**:
+  - `content.js`: restored direct support for `sponsor_only`, added instant `onchange` auto-saving to local storage, and added a quick category mode selector right on the Ads & Sponsors tab footer beside "Upload to SponsorBlock".
+  - `manifest.json` & `CHANGELOG.md`: bumped to v3.9.5.
+- **Verified**:
+  - Syntax check clean; scanner clean; selection toggles cleanly between `sponsor_only` and `mapped`.
+- **Refs**: learning.md [area: sponsorblock]
+- **Open / Next**: none

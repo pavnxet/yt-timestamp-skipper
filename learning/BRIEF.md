@@ -2,10 +2,10 @@
 # BRIEF: cold-start summary
 
 ## State (≤ 5 lines)
-Chrome MV3 extension, v3.9.4, live and self-updating. One content script (`content.js`, ~230 KB) holds all UI and logic; no bundler, no framework, no committed test runner. Releases are self-hosted: pushing a `v*` tag signs a CRX3 and publishes `updates.xml` to the GitHub release, and installed copies update from there. Manual (skill-copy) generation is the default; API mode is opt-in. There is no shared credential of any kind — users supply their own AI and transcript keys.
+Chrome MV3 extension, v3.9.5, live and self-updating. One content script (`content.js`, ~231 KB) holds all UI and logic; no bundler, no framework, no committed test runner. Releases are self-hosted: pushing a `v*` tag signs a CRX3 and publishes `updates.xml` to the GitHub release, and installed copies update from there. Manual (skill-copy) generation is the default; API mode is opt-in. There is no shared credential of any kind — users supply their own AI and transcript keys.
 
 ## Active work / handoff
-- S-20261121-0002 · DONE · userAgent updated to sponsorblock/5.10.4 and category migration shipped as v3.9.4 · next: none · blocked on: none
+- S-20261121-0003 · DONE · restored Sponsor-only category mode and added quick category dropdown in Ads tab footer (v3.9.5) · next: none · blocked on: none
 
 ## Top pitfalls (≤ 10, most expensive to rediscover first)
 - sponsorblock: `userAgent` must be `sponsorblock/<semver>` (e.g. `sponsorblock/5.10.4`). The server validator requires `sponsorblock/` prefix; other formats trigger silent drops (`action: "drop"`) returning HTTP 200 `"OK"` with 0 DB writes -> learning.md [area: sponsorblock]

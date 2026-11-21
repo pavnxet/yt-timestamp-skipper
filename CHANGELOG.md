@@ -5,6 +5,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 
 ## [Unreleased]
 
+## [3.9.5] - 2026-11-21
+
+### Added
+- **Quick category mode selector.** Added a category mode dropdown right on the Ads & Sponsors tab footer beside "Upload to SponsorBlock" so you can switch between "Upload as Sponsor" and "Use AI Categories" in one click without opening Settings.
+
+### Fixed
+- **Restored "Upload everything as Sponsor" mode.** Fixed category mode selection so choosing `sponsor_only` accurately maps all submitted intervals to `sponsor`. Added immediate `onchange` auto-saving for both dropdowns.
+
 ## [3.9.4] - 2026-11-21
 
 ### Fixed

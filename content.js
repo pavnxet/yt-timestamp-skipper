@@ -360,8 +360,12 @@ function createDashboard() {
                 <textarea id="yt-sk-sb-raw-textarea" class="yt-sk-turso-input yt-sk-drawer-textarea" placeholder="Detected segments and [HH:MM:SS]-[HH:MM:SS] intervals appear here..."></textarea>
             </div>
 
-            <div class="yt-sk-sb-footer-bar">
+            <div class="yt-sk-sb-footer-bar" style="display:flex; gap:8px; align-items:center;">
                 <button class="yt-sk-btn yt-sk-btn-primary yt-sk-sb-upload-btn" id="yt-sk-btn-upload-sb" title="Send every segment below to the SponsorBlock server">🚀 Upload to SponsorBlock</button>
+                <select id="yt-sk-sb-quick-category-mode" class="yt-sk-select" style="max-width:180px; font-size:12px; height:34px; padding:2px 8px;" title="Choose whether to upload all as Sponsor or keep specific categories">
+                    <option value="sponsor_only">Upload as Sponsor</option>
+                    <option value="mapped">Use AI Categories</option>
+                </select>
                 <button class="yt-sk-btn" id="yt-sk-btn-copy-sb" title="Copy the intervals in SponsorBlock format">📋 Copy</button>
             </div>
         </div>
@@ -516,8 +520,8 @@ function createDashboard() {
                 <input type="password" id="yt-sk-sb-user-id" class="yt-sk-turso-input" placeholder="SponsorBlock private user ID (UUID)">
                 <div class="yt-sk-section-sub" style="margin-top:-2px;">SponsorBlock extension → Options → Settings → Copy private user ID.</div>
                 <select id="yt-sk-sb-category-mode" class="yt-sk-select">
+                    <option value="sponsor_only">Upload everything as "Sponsor"</option>
                     <option value="mapped">Use the AI's categories (Sponsor / SelfPromo / Filler / Intro / Outro)</option>
-                    <option value="sponsor_only">Upload everything as "Sponsor" (fallback only)</option>
                 </select>
             </div>
 
@@ -683,6 +687,7 @@ function createDashboard() {
     // SponsorBlock Elements
     const sbUserIdInput = document.getElementById('yt-sk-sb-user-id');
     const sbCategoryModeSelect = document.getElementById('yt-sk-sb-category-mode');
+    const sbQuickCategoryModeSelect = document.getElementById('yt-sk-sb-quick-category-mode');
     const transcriptApiKeyInput = document.getElementById('yt-sk-transcript-api-key');
     const btnScanRemovable = document.getElementById('yt-sk-btn-scan-removable');
     const btnUploadSb = document.getElementById('yt-sk-btn-upload-sb');
@@ -1230,8 +1235,22 @@ function createDashboard() {
 
         // SponsorBlock credentials
         if (res.sbUserId && sbUserIdInput) sbUserIdInput.value = res.sbUserId;
+        const currentCatMode = res.sbCategoryMode || 'sponsor_only';
         if (sbCategoryModeSelect) {
-            sbCategoryModeSelect.value = (res.sbCategoryModeExplicit ? res.sbCategoryMode : null) || 'mapped';
+            sbCategoryModeSelect.value = currentCatMode;
+            sbCategoryModeSelect.onchange = () => {
+                const val = sbCategoryModeSelect.value;
+                chrome.storage.local.set({ sbCategoryMode: val });
+                if (sbQuickCategoryModeSelect) sbQuickCategoryModeSelect.value = val;
+            };
+        }
+        if (sbQuickCategoryModeSelect) {
+            sbQuickCategoryModeSelect.value = currentCatMode;
+            sbQuickCategoryModeSelect.onchange = () => {
+                const val = sbQuickCategoryModeSelect.value;
+                chrome.storage.local.set({ sbCategoryMode: val });
+                if (sbCategoryModeSelect) sbCategoryModeSelect.value = val;
+            };
         }
 
         // TranscriptAPI fallback key
@@ -1451,8 +1470,7 @@ function createDashboard() {
             soundUrl: soundUrl,
             soundVolume: soundVolume,
             sbUserId: sbUserIdInput ? sbUserIdInput.value.trim() : '',
-            sbCategoryMode: sbCategoryModeSelect ? sbCategoryModeSelect.value : 'mapped',
-            sbCategoryModeExplicit: true,
+            sbCategoryMode: sbCategoryModeSelect ? sbCategoryModeSelect.value : (sbQuickCategoryModeSelect ? sbQuickCategoryModeSelect.value : 'sponsor_only'),
             transcriptApiKey: transcriptApiKeyInput ? transcriptApiKeyInput.value.trim() : ''
         };
         showMiniWidget = miniChecked;
@@ -2447,7 +2465,7 @@ function createDashboard() {
 
             const videoEl = document.querySelector('video');
             const videoDuration = (videoEl?.duration && isFinite(videoEl.duration)) ? Math.round(videoEl.duration) : undefined;
-            const categoryMode = (res.sbCategoryModeExplicit ? res.sbCategoryMode : null) || 'mapped';
+            const categoryMode = res.sbCategoryMode || (sbQuickCategoryModeSelect ? sbQuickCategoryModeSelect.value : 'sponsor_only');
 
             const parsed = parseSponsorSegmentsFromText(rawText);
             const segmentsArray = parsed.map(item => {
