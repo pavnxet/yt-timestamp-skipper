@@ -15,6 +15,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 - README rewritten for discoverability: keyword-led title and summary, badges, table of contents, feature index, configuration and shortcut tables, FAQ, browser support matrix.
 - Landing page metadata: canonical URL, Open Graph and Twitter cards, JSON-LD `SoftwareApplication`, `robots.txt` and `sitemap.xml`.
 
+## [3.9.2]
+
+### Fixed
+- **Invalid SponsorBlock category.** A segment whose reason contained "highlight" was mapped to `highlight`, which is not a SponsorBlock category (the real one is `poi_highlight`). The server rejects the whole batch with a 400 when one bad category is present, so a single such segment silently killed every other segment in the upload.
+- **Upload count lied.** The success toast reported how many segments were *sent*, not how many the server accepted. It now reports the accepted count, so a partial rejection is visible.
+
+### Added
+- **Review step before upload.** The confirmation dialog now lists each interval with its category instead of showing only a total, in line with SponsorBlock's rule that submissions are reviewed by a human before upload.
+- **Public-ID guard.** Pasting the 64-character public User ID is now caught before upload. It used to pass the length check silently and file the segments under a different identity, where they were invisible to everyone including the submitter.
+
 ## [3.9.1]
 
 ### Added

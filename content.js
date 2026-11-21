@@ -1775,7 +1775,7 @@ function createDashboard() {
         if (c.includes('SELF') || c.includes('PROMO') || c.includes('APP') || c.includes('BATCH') || c.includes('BOOK')) return 'selfpromo';
         if (c.includes('EXCLUSIVE')) return 'exclusive_access';
         if (c.includes('INTERACTION') || c.includes('SUBSCRIBE') || c.includes('LIKE') || c.includes('BELL')) return 'interaction';
-        if (c.includes('HIGHLIGHT')) return 'highlight';
+        if (c.includes('HIGHLIGHT')) return 'poi_highlight';
         if (c.includes('INTRO') || c.includes('INTERMISSION') || c.includes('ANIMATION') || c.includes('SILENCE')) return 'intro';
         if (c.includes('OUTRO') || c.includes('ENDCARD') || c.includes('CREDIT') || c.includes('CLOSING') || c.includes('SIGN_OFF')) return 'outro';
         if (c.includes('PREVIEW') || c.includes('RECAP')) return 'preview';
@@ -2420,6 +2420,13 @@ function createDashboard() {
                 return;
             }
 
+            // A 64-char hex value is the PUBLIC id. Uploading with it files the segments
+            // under a different identity, where they are invisible to everyone including you.
+            if (!isAuto && /^[a-f0-9]{64}$/i.test(userId) &&
+                !confirm('This looks like your PUBLIC User ID (64-character hash), not the private one.\n\nThe private ID is a 30+ character string: SponsorBlock extension -> Options -> Settings -> Copy private user ID.\n\nContinue with it anyway?')) {
+                return;
+            }
+
             let rawText = (sbRawTextarea?.value || sbRawText || '').trim();
             if (!rawText || rawText.includes('NO REMOVABLE SEGMENTS FOUND')) {
                 const pasteVal = (sbQuickPasteInput?.value || '').trim();
@@ -2456,7 +2463,13 @@ function createDashboard() {
             }
 
             if (!isAuto) {
-                if (!confirm(`Ready to submit ${segmentsArray.length} removable segment(s) to SponsorBlock server?\n\nVideo ID: ${videoId}\nUser ID: ${userId.substring(0, 8)}...\nCategory Mode: ${categoryMode}`)) {
+                // SponsorBlock requires a human to review submissions before upload,
+                // so show the actual intervals rather than just a count.
+                const preview = segmentsArray.slice(0, 20)
+                    .map((s, i) => `${String(i + 1).padStart(2)}. ${formatTime(Math.round(s.segment[0]))}-${formatTime(Math.round(s.segment[1]))}  ${s.category}`)
+                    .join('\n');
+                const more = segmentsArray.length > 20 ? `\n...and ${segmentsArray.length - 20} more` : '';
+                if (!confirm(`Review before upload - ${segmentsArray.length} segment(s) to SponsorBlock\n\n${preview}${more}\n\nVideo: ${videoId}\nUser ID: ${userId.substring(0, 8)}...\nCategory mode: ${categoryMode}\n\nSubmit these?`)) {
                     return;
                 }
             }
@@ -2476,8 +2489,11 @@ function createDashboard() {
                 if (btnUploadSb) { btnUploadSb.disabled = false; btnUploadSb.textContent = '🚀 Upload to SponsorBlock'; }
 
                 if (resp && resp.success) {
-                    setStatus(`UPLOADED (${segmentsArray.length})`, '#00e676');
-                    showToast(`SUCCESS: ${segmentsArray.length} segments uploaded to SponsorBlock!`, '🎉', 5000);
+                    // The server returns only the segments it accepted; a smaller number
+                    // means some were dropped, which is worth seeing.
+                    const accepted = Array.isArray(resp.data?.data) ? resp.data.data.length : segmentsArray.length;
+                    setStatus(`UPLOADED (${accepted})`, '#00e676');
+                    showToast(`SUCCESS: ${accepted} of ${segmentsArray.length} segments accepted by SponsorBlock!`, '🎉', 5000);
                     playCompletionSound();
                 } else {
                     const err = resp?.error || 'Upload failed';
