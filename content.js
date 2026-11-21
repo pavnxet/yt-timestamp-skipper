@@ -516,8 +516,8 @@ function createDashboard() {
                 <input type="password" id="yt-sk-sb-user-id" class="yt-sk-turso-input" placeholder="SponsorBlock private user ID (UUID)">
                 <div class="yt-sk-section-sub" style="margin-top:-2px;">SponsorBlock extension → Options → Settings → Copy private user ID.</div>
                 <select id="yt-sk-sb-category-mode" class="yt-sk-select">
-                    <option value="sponsor_only">Upload everything as "Sponsor" (safe default)</option>
                     <option value="mapped">Use the AI's categories (Sponsor / SelfPromo / Filler / Intro / Outro)</option>
+                    <option value="sponsor_only">Upload everything as "Sponsor" (fallback only)</option>
                 </select>
             </div>
 
@@ -1449,7 +1449,7 @@ function createDashboard() {
             soundUrl: soundUrl,
             soundVolume: soundVolume,
             sbUserId: sbUserIdInput ? sbUserIdInput.value.trim() : '',
-            sbCategoryMode: sbCategoryModeSelect ? sbCategoryModeSelect.value : 'sponsor_only',
+            sbCategoryMode: sbCategoryModeSelect ? sbCategoryModeSelect.value : 'mapped',
             transcriptApiKey: transcriptApiKeyInput ? transcriptApiKeyInput.value.trim() : ''
         };
         showMiniWidget = miniChecked;
@@ -2443,7 +2443,7 @@ function createDashboard() {
             }
 
             const videoEl = document.querySelector('video');
-            const videoDuration = videoEl?.duration ? Math.round(videoEl.duration) : undefined;
+            const videoDuration = (videoEl?.duration && isFinite(videoEl.duration)) ? Math.round(videoEl.duration) : undefined;
             const categoryMode = res.sbCategoryMode || 'mapped';
 
             const parsed = parseSponsorSegmentsFromText(rawText);
@@ -2489,12 +2489,17 @@ function createDashboard() {
                 if (btnUploadSb) { btnUploadSb.disabled = false; btnUploadSb.textContent = '🚀 Upload to SponsorBlock'; }
 
                 if (resp && resp.success) {
-                    // The server returns only the segments it accepted; a smaller number
-                    // means some were dropped, which is worth seeing.
-                    const accepted = Array.isArray(resp.data?.data) ? resp.data.data.length : segmentsArray.length;
-                    setStatus(`UPLOADED (${accepted})`, '#00e676');
-                    showToast(`SUCCESS: ${accepted} of ${segmentsArray.length} segments accepted by SponsorBlock!`, '🎉', 5000);
-                    playCompletionSound();
+                    // The server returns the array of accepted segments with assigned UUIDs.
+                    const acceptedList = Array.isArray(resp.data?.data) ? resp.data.data : (Array.isArray(resp.data) ? resp.data : []);
+                    const accepted = acceptedList.length;
+                    if (accepted > 0) {
+                        setStatus(`UPLOADED (${accepted})`, '#00e676');
+                        showToast(`SUCCESS: ${accepted} of ${segmentsArray.length} segments accepted by SponsorBlock!`, '🎉', 5000);
+                        playCompletionSound();
+                    } else {
+                        setStatus('SB DROPPED', '#ff4b4b');
+                        alert('SponsorBlock server did not return any accepted segment UUIDs.\nPlease verify your private User ID in Settings.');
+                    }
                 } else {
                     const err = resp?.error || 'Upload failed';
                     setStatus('SB UPLOAD ERROR', '#ff4b4b');
@@ -2695,14 +2700,20 @@ function updateStateFromText(text) {
     if (!text) text = '';
 
     // Check if input text contains both dual sections:
-    const sbHeaderRegex = /(?:={2,}|#{1,4}|\*{2,})?\s*SECTION(?:\s*\d+)?\s*:\s*(?:REMOVABLE\s*(?:\/|\s)\s*)?SPONSORBLOCK[^\n]*|#{1,4}\s*(?:REMOVABLE(?:\s*SEGMENTS)?|SPONSORBLOCK[^\n]*)/i;
+    const sbHeaderRegex = /(?:={2,}|#{1,4}|\*{2,})?\s*SECTION(?:\s*\d+)?\s*:\s*(?:REMOVABLE\s*(?:\/|\s)\s*)?SPONSORBLOCK[^\n]*|#{1,4}[^\n]*(?:REMOVABLE|SPONSORBLOCK|स्पॉन्सरब्लॉक)[^\n]*/i;
     const sbMatch = text.match(sbHeaderRegex);
     if (sbMatch) {
         const sbPos = text.search(sbHeaderRegex);
         const chaptersPart = text.substring(0, sbPos)
             .replace(/(?:={2,}|#{1,4}|\*{2,})?\s*SECTION(?:\s*\d+)?\s*:\s*(?:QUESTION\s+)?CHAPTERS[^\n]*/i, '')
             .trim();
-        const sponsorPart = text.substring(sbPos + sbMatch[0].length).trim();
+        let sponsorPart = text.substring(sbPos + sbMatch[0].length).trim();
+
+        // If Mode 3 / MCQ questions table follows, do not let MCQ timestamps bleed into SponsorBlock
+        const nextSectionMatch = sponsorPart.match(/(?:={2,}|#{1,4}|\*{2,})?[^\n]*(?:SECTION\s*3|मोड\s*3|MCQ|QUESTION)[^\n]*/i);
+        if (nextSectionMatch) {
+            sponsorPart = sponsorPart.substring(0, nextSectionMatch.index).trim();
+        }
 
         if (sponsorPart && !sponsorPart.includes('NO REMOVABLE SEGMENTS FOUND')) {
             sbRawText = sponsorPart;
@@ -3706,15 +3717,8 @@ async function checkAndTriggerAutoGeneration() {
                                             if (endSec > startSec) {
                                                 let sbCategory = 'sponsor';
                                                 if (categoryMode === 'mapped') {
-                                                    const detectedCat = (tableCategoryMap.get(`${startStr}-${endStr}`) || '').toUpperCase();
-                                                    if (detectedCat === 'SPONSOR') sbCategory = 'sponsor';
-                                                    else if (detectedCat === 'SELFPROMO') sbCategory = 'selfpromo';
-                                                    else if (detectedCat === 'INTERACTION') sbCategory = 'interaction';
-                                                    else if (detectedCat === 'INTRO') sbCategory = 'intro';
-                                                    else if (detectedCat === 'OUTRO') sbCategory = 'outro';
-                                                    else if (detectedCat === 'PREVIEW') sbCategory = 'preview';
-                                                    else if (detectedCat === 'FILLER' || detectedCat === 'JOKE' || detectedCat === 'NON_EDUCATIONAL' || detectedCat === 'TANGENT') sbCategory = 'filler';
-                                                    else sbCategory = 'sponsor';
+                                                    const detectedCat = tableCategoryMap.get(`${startStr}-${endStr}`) || trimmed;
+                                                    sbCategory = resolveSponsorCategory(detectedCat);
                                                 }
 
                                                 segmentsArray.push({

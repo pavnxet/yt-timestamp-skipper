@@ -1310,11 +1310,11 @@ async function submitSponsorBlock({ videoId, userId, segments, videoDuration }) 
         videoID: videoId,
         userID: cleanUserId,
         service: "YouTube",
-        userAgent: "SponsorBlock-Skipper-Extension/3.0",
+        userAgent: "mnjggcdmjocbbbhaepdhchncahnbgone/v5.10.4",
         segments: segments
     };
 
-    if (typeof videoDuration === 'number' && videoDuration > 0) {
+    if (typeof videoDuration === 'number' && isFinite(videoDuration) && videoDuration > 0) {
         payload.videoDuration = videoDuration;
         
         // Safety: Validate segments don't exceed video duration
@@ -1345,8 +1345,18 @@ async function submitSponsorBlock({ videoId, userId, segments, videoDuration }) 
     });
 
     if (response.ok) {
-        const resData = await response.json().catch(() => null);
-        return { success: true, count: segments.length, data: resData };
+        const responseText = await response.text().catch(() => '');
+        let resData = null;
+        try {
+            resData = JSON.parse(responseText);
+        } catch {
+            // Non-JSON response (e.g. text "OK") indicates the server validator silently dropped the submission
+            throw new Error(`SponsorBlock server dropped the submission (returned text: "${responseText.trim() || 'OK'}"). The server validator rejected the client or submission format.`);
+        }
+        if (!Array.isArray(resData)) {
+            throw new Error(`SponsorBlock unexpected response format: ${responseText.slice(0, 100)}`);
+        }
+        return { success: true, count: resData.length, data: resData };
     } else if (response.status === 403) {
         const errBody = await response.text().catch(() => '');
         throw new Error(`Error 403 (Forbidden): ${errBody || 'Invalid User ID or auto-moderator rejected the submission.'}`);

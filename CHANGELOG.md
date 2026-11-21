@@ -5,6 +5,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 
 ## [Unreleased]
 
+## [3.9.3] - 2026-11-21
+
+### Fixed
+- **SponsorBlock server validator silent drop.** In `background.js`, `userAgent` was sent as `SponsorBlock-Skipper-Extension/3.0`, causing SponsorBlock's server validator to silently drop submissions (`action: "drop"`) and return plain text `OK` without saving segments. It now uses the standard client signature (`mnjggcdmjocbbbhaepdhchncahnbgone/v5.10.4`), which is accepted by the server.
+- **Silent drop detection.** When the server dropped an upload with text `OK`, `background.js` previously treated HTTP 200 as success and `content.js` falsely announced `17 of 17 segments accepted`. Submissions are now strictly checked for a valid JSON array of assigned UUIDs, surfacing errors if a drop occurs.
+- **Hindi skill header recognition.** `updateStateFromText` now recognizes the 3-in-1 Hindi prompt header `## मोड 2: स्पॉन्सरब्लॉक खंड (SponsorBlock Segments)` and cleanly truncates before Mode 3, preventing MCQ question timestamps from contaminating SponsorBlock cuts.
+- **YouTube Live duration safety.** Handled `Infinity` duration on `/live/` streams so `isFinite` guards prevent invalid serialized JSON.
+- **Category mode default.** Defaulted `sbCategoryMode` to `mapped` so user tags like `FILLER` and `SELFPROMO` are not inadvertently flattened to generic `sponsor`.
+
 ### Added
 - `docs/` guide set: getting started, installation, configuration, AI providers, transcripts, chapters & filters, SponsorBlock, Turso, shortcuts, troubleshooting, architecture, development, FAQ.
 - `CONTRIBUTING.md`, `SECURITY.md`, this changelog.
