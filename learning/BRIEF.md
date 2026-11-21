@@ -1,4 +1,4 @@
-<!-- verified-at: 9433d08 · 2026-11-21 · rewritten whole, not appended -->
+<!-- verified-at: 2b88e25 · 2026-11-21 · rewritten whole, not appended -->
 # BRIEF: cold-start summary
 
 ## State (≤ 5 lines)
